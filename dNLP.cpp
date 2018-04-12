@@ -13,6 +13,8 @@ class dNLP : public TNLP{
     vector<tuple<int,int>> hesind;
     
   public:
+    double* res;
+
     dNLP(Objective* fi,vector<var> varsi,vector<PhiFuncPrim*> phixi,const double* x0i) : f(fi),vars(varsi),phix(phixi),x0(x0i) {};
 
     bool get_nlp_info(Index& n, Index& m, Index& njac, Index& nhes, IndexStyleEnum& index_style){
@@ -129,7 +131,11 @@ class dNLP : public TNLP{
     }
 
   void finalize_solution(SolverReturn status, Index n, const Number* x, const Number* z_L, const Number* z_U, Index m, 
-        const Number* g, const Number* lambda, Number obj_value, const IpoptData* ip_data, IpoptCalculatedQuantities* ip_cq){};
+        const Number* g, const Number* lambda, Number obj_value, const IpoptData* ip_data, IpoptCalculatedQuantities* ip_cq){
+    res = new double[n];
+    for(int i=0;i<n;i++)
+      res[i] = x[i];
+  };
 
 private:
   dNLP(const dNLP&);
