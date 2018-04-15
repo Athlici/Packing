@@ -1,18 +1,18 @@
-PhiPolygon regularPolygon(int n){
+PhiCompObj* regularPolygon(int n){
     double phi=2*M_PI/n;
     vector<point> v(n);
     for(int i=0;i<n;i++)
         v[i]=point(sin(phi*i),cos(phi*i));
-    return PhiPolygon(v);
+    return new PhiPolygon(v);
 }
 
-vector<double> boundCircMod(SmartPtr<IpoptApplication> app, PhiPolygon A){
+vector<double> boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     Objective* obj = new FirstVar();
     vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19)};
 
     Scale f = Scale(0);
     Translate g = Translate(1);
-    PhiCircCompl C = PhiCircCompl(circle(point(0,0),1));
+    PhiInfObj* C = new PhiCircCompl(circle(point(0,0),1));
     PhiFunc* phi = phiFunc(C,f,A,g);
 
     double x[] = {1,0,0};

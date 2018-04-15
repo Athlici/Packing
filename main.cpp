@@ -10,15 +10,17 @@ using std::vector,std::tuple,std::get,std::string;
 #include "IpIpoptApplication.hpp"
 #include "Struct.cpp"
 #include "Transform.cpp"
-#include "PhiObj.cpp"
 #include "PhiFunc.cpp"
+#include "PhiObj.cpp"
 #include "Objective.cpp"
 #include "dNLP.cpp"
 #include "Helpers.cpp"
 
 int main(int argc, char** argv) {
 
-    PhiPolygon P = regularPolygon(3);
+//    PhiCompObj* P = regularPolygon(3);
+    double s2 = 1/sqrt(2);
+    PhiCompObj* P = new PhiCircSeg(point(-s2,s2),point(s2,s2),circle(point(0,0),1));
 
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetIntegerValue("print_level", 5);

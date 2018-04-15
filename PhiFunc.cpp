@@ -77,21 +77,24 @@ class PhiFuncNode: public PhiFunc{
         }
 };
 
-class PhiFuncScCcTrPt : public PhiFuncPrim{ //TODO: scale cc.p
-    double dx,dy,c,c2;
+class PhiFuncScCcTrCl : public PhiFuncPrim{ //TODO: scale cc.p
+    double dx,dy,rc,cr;
     int i,j;
   public:
-    PhiFuncScCcTrPt(circle cc,Scale f,point p,Translate g){
-        dx = cc.p.x-p.x;
-        dy = cc.p.y-p.y;
-        c = cc.r;
-        c2= 2*c*c;
-        i = f.ind;
-        j = g.ind;
+    PhiFuncScCcTrCl(circle cc,Scale f,point p,Translate g){
+        dx = cc.p.x-p.x; dy = cc.p.y-p.y;
+        rc = 0; cr = cc.r;
+        i = f.ind; j = g.ind;
+    }
+
+    PhiFuncScCcTrCl(circle cc,Scale f,circle c,Translate g){
+        dx = cc.p.x-c.p.x; dy = cc.p.y-c.p.y;
+        rc = c.r; cr = cc.r;
+        i = f.ind; j = g.ind;
     }
 
     double eval(const double* x){
-        double r=c*x[i],a=x[j]-dx,b=x[j+1]-dy;
+        double r=cr*x[i],a=x[j]-dx,b=x[j+1]-dy;
         return r*r-a*a-b*b;
     }
 
@@ -100,7 +103,7 @@ class PhiFuncScCcTrPt : public PhiFuncPrim{ //TODO: scale cc.p
     }
 
     void getD1(const double* x,double* res){
-        res[0] = c2*x[i];
+        res[0] = 2*cr*(cr*x[i]-rc);
         res[1] = 2*(dx-x[j]);
         res[2] = 2*(dy-x[j+1]);
     }
@@ -110,8 +113,39 @@ class PhiFuncScCcTrPt : public PhiFuncPrim{ //TODO: scale cc.p
     }
 
     void getD2(const double* x,double* res){
-        res[0] = c2; res[1] = -2; res[2] = -2;
+        res[0] = 2*cr*cr; res[1] = -2; res[2] = -2;
     }
+};
+
+class PhiFuncHScCcTrCs : public PhiFuncPrim{
+    double dx,dy,det;
+    int i;
+  public:
+    PhiFuncHScCcTrCs(Translate f, circle c, point p, double s){
+      dx = s*(c.p.y-p.y);
+      dy = s*(p.x-c.p.x);
+      det= s*(p.x*c.p.y-p.y*c.p.x);
+      i = f.ind;
+    };
+    
+    double eval(const double* x){
+        return dx*x[i]+dy*x[i+1]+det;
+    }
+
+    vector<int> getD1ind(){
+        return {i,i+1};
+    }
+
+    void getD1(const double* x,double* res){
+        res[0] = dx;
+        res[1] = dy;
+    }
+
+    vector<tuple<int,int>> getD2ind(){
+        return {};
+    }
+
+    void getD2(const double* x,double* res){}
 };
 
 class PhiFuncLnRTPtRT : public PhiFuncPrim{
@@ -136,27 +170,27 @@ class PhiFuncLnRTPtRT : public PhiFuncPrim{
     void getD2(const double* x,double* res){}
 };
 
-PhiFunc* phiFunc(PhiCircCompl C,Scale f,PhiPolygon P,Translate g){
-    vector<PhiFunc*> comp(P.p.size());
-    for(int i=0;i<P.p.size();i++)
-        comp[i] = new PhiFuncScCcTrPt(C.c,f,P.p[i],g);
-    return new PhiFuncNode(true,comp);
-}
-
-PhiFunc* phiFunc(PhiPolygon P,RotTrans f,PhiPolygon Q,RotTrans g){
-    int n = P.p.size(),m = Q.p.size();
-    vector<PhiFunc*> comp(n+m);
-    for(int i=0;i<n;i++){
-        vector<PhiFunc*> tmp(m);
-        for(int j=0;j<m;j++)
-            tmp[j] = new PhiFuncLnRTPtRT(P.p[i],P.p[(i+1)%n],f,Q.p[j],g);
-        comp[i] = new PhiFuncNode(true,tmp);
-    }
-    for(int i=0;i<m;i++){
-        vector<PhiFunc*> tmp(n);
-        for(int j=0;j<n;j++)
-            tmp[j] = new PhiFuncLnRTPtRT(Q.p[i],Q.p[(i+1)%m],g,P.p[j],f);
-        comp[n+i] = new PhiFuncNode(true,tmp);
-    }
-    return new PhiFuncNode(false,comp);
-}
+//PhiFunc* phiFunc(PhiCircCompl C,Scale f,PhiPolygon P,Translate g){
+//    vector<PhiFunc*> comp(P.p.size());
+//    for(int i=0;i<P.p.size();i++)
+//        comp[i] = new PhiFuncScCcTrPt(C.c,f,P.p[i],g);
+//    return new PhiFuncNode(true,comp);
+//}
+//
+//PhiFunc* phiFunc(PhiPolygon P,RotTrans f,PhiPolygon Q,RotTrans g){
+//    int n = P.p.size(),m = Q.p.size();
+//    vector<PhiFunc*> comp(n+m);
+//    for(int i=0;i<n;i++){
+//        vector<PhiFunc*> tmp(m);
+//        for(int j=0;j<m;j++)
+//            tmp[j] = new PhiFuncLnRTPtRT(P.p[i],P.p[(i+1)%n],f,Q.p[j],g);
+//        comp[i] = new PhiFuncNode(true,tmp);
+//    }
+//    for(int i=0;i<m;i++){
+//        vector<PhiFunc*> tmp(n);
+//        for(int j=0;j<n;j++)
+//            tmp[j] = new PhiFuncLnRTPtRT(Q.p[i],Q.p[(i+1)%m],g,P.p[j],f);
+//        comp[n+i] = new PhiFuncNode(true,tmp);
+//    }
+//    return new PhiFuncNode(false,comp);
+//}
