@@ -83,6 +83,7 @@ class dNLP : public TNLP{
     }
   
     bool eval_g(Index n, const Number* x, bool newx, Index m, Number* g){
+      //potentially precalc (sin,cos) + manage indices here with even/odd encoding
       for(int i=0;i<m;i++)
         g[i] = phix[i]->eval(x);
       return true;
@@ -135,9 +136,5 @@ class dNLP : public TNLP{
     res = new double[n];
     for(int i=0;i<n;i++)
       res[i] = x[i];
-  };
-
-private:
-  dNLP(const dNLP&);
-  dNLP& operator=(const dNLP&);
+  }
 };

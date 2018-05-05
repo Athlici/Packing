@@ -1,7 +1,8 @@
 struct var{
+    var() {};
+    var(double lbi,double ubi) : lb(lbi),ub(ubi) {};
     double lb,ub;
     string name;
-    var(double lbi,double ubi) : lb(lbi),ub(ubi) {};
 };
 
 struct point{
@@ -11,6 +12,7 @@ struct point{
 };
 
 struct circle{
+    circle() {};
     circle(point pi,double ri) : p(pi),r(ri) {};
     point p;
     double r;
