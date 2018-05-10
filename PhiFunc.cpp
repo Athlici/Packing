@@ -135,7 +135,7 @@ class PhiFuncHScCcRtCs : public PhiFuncPrim{
       dy = s*(p.x-c.p.x);
       det= s*(p.x*c.p.y-p.y*c.p.x);
       i = f.ind;
-    };
+    }
 
     double eval(const double* x){
         double s = sin(x[i+2]), c = cos(x[i+2]);
@@ -166,7 +166,7 @@ class PhiFuncHScCcRtCs : public PhiFuncPrim{
 };
 
 class PhiFuncLnRtClRt : public PhiFuncPrim{
-    Matrix<double,2,2> A,B,T;
+    Matrix2d A,B,T;
     double c;
     int i,j;
   public:
@@ -177,7 +177,7 @@ class PhiFuncLnRtClRt : public PhiFuncPrim{
         B << dx, -dy, dy, dx;
         c = n*(l2.x*l1.y-l1.x*l2.y);
         i = f.ind; j = g.ind;
-    };
+    }
     
     double eval(const double* x){
         Vector2d    f1(sin(x[i+2]),cos(x[i+2]));
@@ -217,23 +217,59 @@ class PhiFuncLnRtClRt : public PhiFuncPrim{
 };
 
 class PhiFuncClRtClRt : public PhiFuncPrim{
+    Matrix2d A,R1,R2;
+    double c;
+    int i,j;
   public:
-    PhiFuncClRtClRt(point l1, point l2, RotTrans f, point p, RotTrans g){
-    };
+    PhiFuncClRtClRt(circle c1, RotTrans f, circle c2, RotTrans g){
+        double x1 = c1.p.x, y1 = c1.p.y, x2 = c2.p.x, y2 = c2.p.y, r = c1.r+c2.r;
+        A  << -2*(x1*x2+y1*y2), 2*(x1*y2-x2*y1), 2*(x2*y1-x1*y2), -2*(x1*x2+y1*y2);
+        R1 <<  2*y1,-2*x1, 2*x1, 2*y1;
+        R2 << -2*y2,-2*x2, 2*x2,-2*y2;
+        c = x1*x1+x2*x2+y1*y1+y2*y2-r*r;
+        i = f.ind; j = g.ind;
+    }
     
     double eval(const double* x){
-        return 0;
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2]));
+        Vector2d    f2(sin(x[j+2]),cos(x[j+2]));
+        Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
+        return y.dot(y+R2*f2)+f1*R1*y+f1*A*f2+c;
     }
 
     vector<int> getD1ind(){
-        return {};
+        return {i,i+1,i+2,j,j+1,j+2};
     }
 
-    void getD1(const double* x,double* res){}
+    void getD1(const double* x,double* res){
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2])),f1d(f1[1],-f1[0]);
+        Vector2d    f2(sin(x[j+2]),cos(x[j+2])),f2d(f2[1],-f2[0]);
+        Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
+        Vector2d dy = 2*y+(f1*R1).transpose()+R2*f2;
+        double tmp[] {dy[0],dy[1],f1d*(R1*y+A*f2),-dy[0],-dy[1],y.dot(R2*f2d)+f1*A*f2d};
+        for(int i=0;i<6;i++) res[i] = tmp[i];
+    }
 
     vector<tuple<int,int>> getD2ind(){
-        return {};
+        if(i<j)
+            return {{i,i},{i+1,i+1},{i,i+2},{i+1,i+2},{i+2,i+2},
+                    {j,j},{j+1,j+1},{j,j+2},{j+1,j+2},{j+2,j+2},
+                    {i,j},{i+1,j+1},{i,j+2},{i+1,j+2},{i+2,j},{i+2,j},{i+2,j+2}};
+        else
+            return {{i,i},{i+1,i+1},{i,i+2},{i+1,i+2},{i+2,i+2},
+                    {j,j},{j+1,j+1},{j,j+2},{j+1,j+2},{j+2,j+2},
+                    {j,i},{j+1,i+1},{j,i+2},{j+1,i+2},{j+2,i},{j+2,i},{j+2,i+2}};
     }
 
-    void getD2(const double* x,double* res){}
+    void getD2(const double* x,double* res){
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2])),f1d(f1[1],-f1[0]);
+        Vector2d    f2(sin(x[j+2]),cos(x[j+2])),f2d(f2[1],-f2[0]);
+        Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
+        RowVector2d dyf1 = f1d*R1;
+        Vector2d    dyf2 = R2*f2d;
+        double fAf= -f1*A*f2;
+        double tmp[] {2,2,dyf1[0],dyf1[1],-f1*R1*y+fAf,
+                      2,2,dyf2[0],dyf2[1],-y.dot(R2*f2)+fAf,
+                     -2,-2,-dyf1[0],-dyf1[1],-dyf2[0],-dyf2[1],fAf};
+    }
 };

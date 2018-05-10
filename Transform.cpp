@@ -1,4 +1,7 @@
-class Transform{};
+class Transform{
+//    public:
+//        virtual PhiFunc* phiFunc(PhiCompObj* P, PhiCompObj* Q, Transform* f) = 0;
+};
 
 class Scale: public Transform{
   public:
@@ -18,3 +21,5 @@ class RotTrans: public Transform{
     RotTrans(){};
     RotTrans(int i) : ind(i) {}
 };
+
+//PhiFunc* phiFunc()
