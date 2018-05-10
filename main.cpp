@@ -4,12 +4,12 @@
 #include <string>
 #include <vector>
 #include <tuple>
-#include <Eigen/Dense>
+#include <eigen3/Eigen/Dense>
+#include <coin/IpIpoptApplication.hpp>
 
 using std::vector,std::tuple,std::get,std::string;
-using Eigen::Matrix,Eigen::Vector2d,Eigen::RowVector2d;
+using Eigen::Matrix2d,Eigen::Vector2d,Eigen::RowVector2d;
 
-#include "IpIpoptApplication.hpp"
 #include "Struct.cpp"
 #include "Transform.cpp"
 #include "PhiFunc.cpp"
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetIntegerValue("print_level", 5);
     app->Options()->SetNumericValue("tol", 1e-9);
-//    app->Options()->SetStringValue("mu_strategy", "adaptive");
+    app->Options()->SetStringValue("linear_solver", "ma57");
 //    app->Options()->SetIntegerValue("max_iter", 100);
 
     ApplicationReturnStatus status = app->Initialize();

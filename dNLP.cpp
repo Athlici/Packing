@@ -1,4 +1,4 @@
-#include "IpTNLP.hpp"
+#include <coin/IpTNLP.hpp>
 
 using namespace Ipopt;
 
