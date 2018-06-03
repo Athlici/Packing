@@ -87,11 +87,9 @@ class PhiFuncScCcRtCl : public PhiFuncPrim{ //Only unit-circle around (0,0)
         i = f.ind; j = g.ind;
     }
 
-    PhiFuncScCcRtCl(circle cc,Scale f,point p,RotTrans g){
-        //PhiFuncScCcRtCl(cc,f,circle(p,0),g);
-        px = p.x; py = p.y; rc = 0;
-        i = f.ind; j = g.ind;
-    }
+    PhiFuncScCcRtCl(circle cc,Scale f,point p,RotTrans g) :
+        PhiFuncScCcRtCl(cc,f,circle(p,0),g) {}
+    
 
     double eval(const double* x){
         double s = sin(x[j+2]), c = cos(x[j+2]);
@@ -218,23 +216,30 @@ class PhiFuncLnRtClRt : public PhiFuncPrim{
 
 class PhiFuncClRtClRt : public PhiFuncPrim{
     Matrix2d A,R1,R2;
-    double c;
+    double c,s;
     int i,j;
   public:
-    PhiFuncClRtClRt(circle c1, RotTrans f, circle c2, RotTrans g){
+    PhiFuncClRtClRt(circle c1, RotTrans f, circle c2, RotTrans g, double o = 1){
         double x1 = c1.p.x, y1 = c1.p.y, x2 = c2.p.x, y2 = c2.p.y, r = c1.r+c2.r;
         A  << -2*(x1*x2+y1*y2), 2*(x1*y2-x2*y1), 2*(x2*y1-x1*y2), -2*(x1*x2+y1*y2);
         R1 <<  2*y1,-2*x1, 2*x1, 2*y1;
         R2 << -2*y2,-2*x2, 2*x2,-2*y2;
         c = x1*x1+x2*x2+y1*y1+y2*y2-r*r;
+        s = o; A*=o; R1*=o; R2*=o; c*=o;
         i = f.ind; j = g.ind;
     }
     
+//    PhiFuncClRtClRt(point p, RotTrans f, circle c, RotTrans g, double o = 1) :
+//        PhiFuncClRtClRt(circle(p,0),f,c,g,o) {}
+
+    PhiFuncClRtClRt(circle c, RotTrans f, point p, RotTrans g, double o = 1) :
+        PhiFuncClRtClRt(c,f,circle(p,0),g,o) {}
+
     double eval(const double* x){
         RowVector2d f1(sin(x[i+2]),cos(x[i+2]));
         Vector2d    f2(sin(x[j+2]),cos(x[j+2]));
         Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
-        return y.dot(y+R2*f2)+f1*R1*y+f1*A*f2+c;
+        return y.dot(s*y+R2*f2)+f1*(R1*y+A*f2)+c;
     }
 
     vector<int> getD1ind(){
@@ -245,7 +250,7 @@ class PhiFuncClRtClRt : public PhiFuncPrim{
         RowVector2d f1(sin(x[i+2]),cos(x[i+2])),f1d(f1[1],-f1[0]);
         Vector2d    f2(sin(x[j+2]),cos(x[j+2])),f2d(f2[1],-f2[0]);
         Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
-        Vector2d dy = 2*y+(f1*R1).transpose()+R2*f2;
+        Vector2d dy = 2*s*y+(f1*R1).transpose()+R2*f2;
         double tmp[] {dy[0],dy[1],f1d*(R1*y+A*f2),-dy[0],-dy[1],y.dot(R2*f2d)+f1*A*f2d};
         for(int i=0;i<6;i++) res[i] = tmp[i];
     }
@@ -268,8 +273,8 @@ class PhiFuncClRtClRt : public PhiFuncPrim{
         RowVector2d dyf1 = f1d*R1;
         Vector2d    dyf2 = R2*f2d;
         double fAf= -f1*A*f2;
-        double tmp[] {2,2,dyf1[0],dyf1[1],-f1*R1*y+fAf,
-                      2,2,dyf2[0],dyf2[1],-y.dot(R2*f2)+fAf,
-                     -2,-2,-dyf1[0],-dyf1[1],-dyf2[0],-dyf2[1],fAf};
+        double tmp[] {2*s, 2*s, dyf1[0], dyf1[1],         -f1*R1*y+fAf,
+                      2*s, 2*s, dyf2[0], dyf2[1],    -y.dot(R2*f2)+fAf,
+                     -2*s,-2*s,-dyf1[0],-dyf1[1],-dyf2[0],-dyf2[1],fAf};
     }
 };
