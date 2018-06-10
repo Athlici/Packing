@@ -5,7 +5,7 @@ struct var{
     string name;
 };
 
-struct point{
+struct point{  //TODO: make Vector2d
     point() {};
     point(double xi,double yi) : x(xi),y(yi) {};
     double x,y;

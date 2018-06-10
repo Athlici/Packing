@@ -6,6 +6,13 @@ PhiCompObj* regularPolygon(int n){
     return new PhiPolygon(v);
 }
 
+tuple<point,point> moveLine(point p0,point p1,double r){
+    double dx = p0.x-p1.x, dy = p0.y-p1.y;
+    double c = r/sqrt(dx*dx+dy*dy);
+    return tuple<point,point>(point(p0.x-dy*c,p0.y+dx*c),
+                              point(p1.x-dy*c,p1.y+dy*c));
+}
+
 circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     Objective* obj = new FirstVar();
     vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19),var(0,0)};

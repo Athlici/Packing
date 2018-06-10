@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     }
 
     Scale f = Scale(0);
-    PhiInfObj* C = new PhiCircCompl(circle(point(0,0),1));
+    PhiInfObj* C = new PhiCircCompl(circle(point(0,0),-1));
 
     vector<RotTrans> rt(n);
     for(int i=0;i<n;i++)

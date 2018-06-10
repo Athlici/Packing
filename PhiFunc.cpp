@@ -1,10 +1,22 @@
 class PhiFuncPrim;
 
+tuple<point,point> moveLine(point,point,double);
+
 class PhiFunc{
+        static double sign(double x){return ((x>=0) ? 1 : -1);}
     public:
         virtual double eval(const double* x) = 0;
         virtual vector<PhiFuncPrim*> getIneqs(const double* x) = 0;
         virtual vector<int> getIndices(const double* x) = 0;
+
+        static PhiFunc* phiFunc(point,point,RotTrans,point ,RotTrans);
+        static PhiFunc* phiFunc(point,point,RotTrans,circle,RotTrans);
+        static PhiFunc* phiFunc(circle,RotTrans,point ,RotTrans);
+        static PhiFunc* phiFunc(circle,RotTrans,circle,RotTrans);
+        static PhiFunc* phiFunc(circle,Scale,point ,RotTrans);
+        static PhiFunc* phiFunc(circle,Scale,circle,RotTrans);
+        static PhiFunc* phiFunc(circle,RotTrans,circle,point,RotTrans,double);
+        static PhiFunc* phiFunc(circle,Scale   ,circle,point,RotTrans,double);
 };
 
 class PhiFuncPrim: public PhiFunc{
@@ -77,19 +89,15 @@ class PhiFuncNode: public PhiFunc{
         }
 };
 
-class PhiFuncScCcRtCl : public PhiFuncPrim{ //Only unit-circle around (0,0)
+class PhiFuncCcScClRt : public PhiFuncPrim{ //Only unit-circle around (0,0)
     double px,py,rc;
     double d1,d2;
     int i,j;
   public:
-    PhiFuncScCcRtCl(circle cc,Scale f,circle c,RotTrans g){
+    PhiFuncCcScClRt(circle cc,Scale f,circle c,RotTrans g){
         px = c.p.x; py = c.p.y; rc = c.r;
         i = f.ind; j = g.ind;
     }
-
-    PhiFuncScCcRtCl(circle cc,Scale f,point p,RotTrans g) :
-        PhiFuncScCcRtCl(cc,f,circle(p,0),g) {}
-    
 
     double eval(const double* x){
         double s = sin(x[j+2]), c = cos(x[j+2]);
@@ -124,11 +132,11 @@ class PhiFuncScCcRtCl : public PhiFuncPrim{ //Only unit-circle around (0,0)
     }
 };
 
-class PhiFuncHScCcRtCs : public PhiFuncPrim{
+class PhiFuncHCcScCsRt : public PhiFuncPrim{
     double dx,dy,det;
     int i;
   public:
-    PhiFuncHScCcRtCs(RotTrans f, circle c, point p, double s){
+    PhiFuncHCcScCsRt(RotTrans f, circle c, point p, double s){
       dx = s*(c.p.y-p.y);
       dy = s*(p.x-c.p.x);
       det= s*(p.x*c.p.y-p.y*c.p.x);
@@ -160,6 +168,58 @@ class PhiFuncHScCcRtCs : public PhiFuncPrim{
         res[0] = -dx*s+dy*c;
         res[1] = -dx*c-dy*s;
         res[2] = -x[i]*(dy*s+dx*c)+x[i+1]*(dx*s-dy*c);
+    }
+};
+//(Could be templatized with matrix arguments)
+class PhiFuncHCcRtCsRt : public PhiFuncPrim{
+    Matrix2d A,B;
+    double c;
+    int i,j;
+  public:
+    PhiFuncHCcRtCsRt(circle cc,RotTrans f,circle pc,point p,RotTrans g,double s){
+        double ccx = cc.p.x, ccy = cc.p.y, pcx = pc.p.x, pcy = pc.p.y;
+        A << pcx-p.x, p.y-pcy, pcy-p.y, pcx-p.x;
+        B << ccy*(p.x-pcx)+ccx*(pcy-p.y), ccx*(pcx-p.x)+ccy*(pcy-p.y),
+             ccx*(p.x-pcx)+ccy*(p.y-pcy), ccy*(p.x-pcx)+ccx*(pcy-p.y);
+        c = pcx*p.y-pcy*p.x;
+        A*= s; B*= s; c*= s;
+        i = f.ind; j = g.ind;
+    }
+
+    double eval(const double* x){
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2])),y(x[j]-x[i],x[j+1]-x[i+1]);
+        Vector2d f2(sin(x[j+2]),cos(x[j+2]));
+        return (y*A+f1*B)*f2+c;
+    }
+
+    vector<int> getD1ind(){
+        return {i,i+1,i+2,j,j+1,j+2};
+    }
+
+    void getD1(const double* x,double* res){
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2])),f1d(f1[1],-f1[0]);
+        Vector2d    f2(sin(x[j+2]),cos(x[j+2])),f2d(f2[1],-f2[0]);
+        RowVector2d y(x[j]-x[i],x[j+1]-x[i+1]);
+        Vector2d    Af2 = A*f2;
+        double tmp[] = {-Af2[0],-Af2[1],f1d*B*f2,Af2[0],Af2[1],(y*A+f1*B)*f2d};
+        for(int i=0;i<6;i++) res[i] = tmp[i];
+    }
+
+    vector<tuple<int,int>> getD2ind(){
+        if(i<j)
+            return {{i+2,i+2},{j,j+2},{j+1,j+2},{j+2,j+2},{i,j+2},{i+1,j+2},{i+2,j+2}};
+        else
+            return {{i+2,i+2},{j,j+2},{j+2,j+2},{j+2,j+2},{j+2,i},{j+2,i+1},{j+2,i+2}};
+    }
+
+    void getD2(const double* x,double* res){
+        RowVector2d f1(sin(x[i+2]),cos(x[i+2])),f1d(f1[1],-f1[0]);
+        Vector2d    f2(sin(x[j+2]),cos(x[j+2])),f2d(f2[1],-f2[0]);
+        RowVector2d y(x[j]-x[i],x[j+1]-x[i+1]);
+        Vector2d    Af2d = A*f2d;
+        double f1Bf2 = -f1*B*f2;
+        double tmp[] {f1Bf2,Af2d[0],Af2d[1],f1Bf2,-Af2d[0],-Af2d[1],f1d*B*f2d};
+        for(int i=0;i<7;i++) res[i] = tmp[i];
     }
 };
 
@@ -229,9 +289,6 @@ class PhiFuncClRtClRt : public PhiFuncPrim{
         i = f.ind; j = g.ind;
     }
     
-//    PhiFuncClRtClRt(point p, RotTrans f, circle c, RotTrans g, double o = 1) :
-//        PhiFuncClRtClRt(circle(p,0),f,c,g,o) {}
-
     PhiFuncClRtClRt(circle c, RotTrans f, point p, RotTrans g, double o = 1) :
         PhiFuncClRtClRt(c,f,circle(p,0),g,o) {}
 
@@ -278,3 +335,37 @@ class PhiFuncClRtClRt : public PhiFuncPrim{
                      -2*s,-2*s,-dyf1[0],-dyf1[1],-dyf2[0],-dyf2[1],fAf};
     }
 };
+
+PhiFunc* PhiFunc::phiFunc(point p0,point p1,RotTrans f,point q,RotTrans g){
+    return new PhiFuncLnRtClRt(p0,p1,f,q,g);
+}
+
+PhiFunc* PhiFunc::phiFunc(point p0,point p1,RotTrans f,circle c,RotTrans g){
+    tuple<point,point> tmp = moveLine(p0,p1,c.r);
+    return new PhiFuncLnRtClRt(get<0>(tmp),get<1>(tmp),f,c.p,g);
+}
+
+PhiFunc* PhiFunc::phiFunc(circle c,RotTrans f,point p,RotTrans g){
+    return new PhiFuncClRtClRt(c,f,p,g,sign(c.r));
+}
+//If c1<0 then -c1>c2
+PhiFunc* PhiFunc::phiFunc(circle c1,RotTrans f,circle c2,RotTrans g){
+    return new PhiFuncClRtClRt(circle(c1.p,c1.r+c2.r),f,c2.p,g,sign(c1.r));
+}
+
+//OK for scaling, otherwise negative circle radius determines complement
+PhiFunc* PhiFunc::phiFunc(circle cc,Scale f,point p,RotTrans g){
+    return new PhiFuncCcScClRt(cc,f,circle(p,0),g);
+}
+
+PhiFunc* PhiFunc::phiFunc(circle cc,Scale f,circle c,RotTrans g){
+    return new PhiFuncCcScClRt(cc,f,c,g);
+}
+
+PhiFunc* PhiFunc::phiFunc(circle cc,RotTrans f,circle pc,point p,RotTrans g,double s){
+    return new PhiFuncHCcRtCsRt(cc,f,pc,p,g,s);
+}
+
+PhiFunc* PhiFunc::phiFunc(circle cc,Scale    f,circle pc,point p,RotTrans g,double s){
+    return new PhiFuncHCcScCsRt(g,pc,p,s);
+}
