@@ -6,6 +6,17 @@ PhiCompObj* regularPolygon(int n){
     return new PhiPolygon(v);
 }
 
+PhiCompObj* regularStar(int n,double r){
+    double phi=2*M_PI/n;
+    vector<point> v(n);
+    for(int i=0;i<n;i++)
+        v[i]=point(cos(phi*i),sin(phi*i));
+    vector<PhiCompObj*> comp(n);
+    for(int i=0;i<n;i++)
+        comp[i]=new PhiHat(v[i],v[(i+1)%n],point(0,0),r);
+    return new PhiCompNode(comp);
+};
+
 tuple<point,point> moveLine(point p0,point p1,double r){
     double dx = p0.x-p1.x, dy = p0.y-p1.y;
     double c = r/sqrt(dx*dx+dy*dy);
