@@ -9,6 +9,7 @@
 
 using std::vector,std::tuple,std::get,std::string;
 using Eigen::Matrix2d,Eigen::Vector2d,Eigen::RowVector2d;
+using Eigen::Matrix3d,Eigen::Vector3d,Eigen::RowVector3d;
 
 #include "Struct.cpp"
 #include "Transform.cpp"
@@ -25,10 +26,11 @@ int main(int argc, char** argv) {
 //    PhiCompObj* P = new PhiCircSeg(point(-s2,s2),point(s2,s2),circle(point(0,0),1));
 
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-    app->Options()->SetIntegerValue("print_level", 3);
+    app->Options()->SetIntegerValue("print_level", 5);
     app->Options()->SetNumericValue("tol", 1e-9);
     app->Options()->SetStringValue("linear_solver", "ma57");
 //    app->Options()->SetIntegerValue("max_iter", 100);
+//    app->Options()->SetStringValue("derivative_test", "second-order");
 
     ApplicationReturnStatus status = app->Initialize();
 
@@ -48,11 +50,11 @@ int main(int argc, char** argv) {
 
     vector<RotTrans> rt(n);
     for(int i=0;i<n;i++) rt[i] = RotTrans(3*i+1);
-    vector<PhiCompObj*> P = {regularPolygon(3),regularPolygon(3),
+    vector<PhiCompObj*> P = {regularPolygon(4),regularPolygon(5),
 //        new PhiCircSeg(point(-s2,s2),point(s2,s2),circle(point(0,0),1)),
 //        new PhiCircSeg(point(-s2,s2),point(s2,s2),circle(point(0,0),1)),
 //        regularStar(3,sqrt(3)),regularStar(3,sqrt(3)),regularStar(3,sqrt(3))};
-        regularPolygon(3),regularPolygon(3),regularPolygon(3)};
+        regularPolygon(5),regularPolygon(5),regularPolygon(5)};
 
     vector<circle> bc(n);
     for(int i=0;i<n;i++) bc[i] = boundCircMod(app,P[i]);
@@ -77,18 +79,20 @@ int main(int argc, char** argv) {
         x[3*i+3] = 0;
     }
 
-    while(phi->eval(x)<0)
+    while(phi->eval(x)<-0.1){
+        std::cout << phi->eval(x) << ";";
         x[0]*=2;
+    }
+        std::cout << phi->eval(x) << ";";
 
     bool newseg;
     do{
         SmartPtr<dNLP> nlp = new dNLP(obj,vars,phi->getIneqs(x),x);
         app->OptimizeTNLP(nlp);
-        newseg = phi->getIneqs(x) != phi->getIneqs(nlp->res);
+//        newseg = phi->getIneqs(x) != phi->getIneqs(nlp->res);
+        newseg = nlp->res[0] < x[0];
         for(int i=0;i<3*n+1;i++) x[i] = nlp->res[i];
     }while(newseg);
-
-    std::cout << phi->eval(x) << "\n";
 
     std::cout << "{";
     for(int i=0;i<3*n+1;i++)
