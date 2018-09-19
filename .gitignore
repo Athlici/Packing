@@ -1,1 +1,3 @@
 packer
+examplegen
+*.o

@@ -21,5 +21,3 @@ class RotTrans: public Transform{
     RotTrans(){};
     RotTrans(int i) : ind(i) {}
 };
-
-//PhiFunc* phiFunc()

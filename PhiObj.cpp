@@ -20,7 +20,7 @@ class PhiInfObj{
 class PhiCircCompl: public PhiInfObj{
     public:
         circle c;
-        PhiCircCompl(circle ci) : c(ci) {};
+        PhiCircCompl(circle ci) : c(ci) {}
 
         PhiFunc* phiFunc(Scale f, PhiCompObj* B, RotTrans g){
             return B->phiFunc(g, this, f);
@@ -32,7 +32,7 @@ class PhiCircCompl: public PhiInfObj{
 class PhiCompNode: public PhiCompObj{
         vector<PhiCompObj*> nodes;
     public:
-        PhiCompNode(vector<PhiCompObj*> ni) : nodes(ni) {};
+        PhiCompNode(vector<PhiCompObj*> ni) : nodes(ni) {}
 
         template <class S,class T> PhiFunc* phiFuncM(RotTrans f,S* O, T g){
             vector<PhiFunc*> res(nodes.size());
@@ -67,7 +67,7 @@ class PhiPolygon: public PhiCompObj{
         vector<point> p;
         int n;
 
-        PhiPolygon(vector<point> pi) : p(pi),n(pi.size()) {};
+        PhiPolygon(vector<point> pi) : p(pi),n(pi.size()) {}
 
         PhiFunc* phiFunc(RotTrans f,PhiCompObj* O, RotTrans g){
             return O->phiFunc(g, this, f);
@@ -91,7 +91,8 @@ class PhiPolygon: public PhiCompObj{
             for(int i=0;i<n;i++){
                 comp[2*i  ] = PhiFunc::phiFunc(exts[2*i],exts[2*i+1],f,c.p,g);
                 comp[2*i+1] = new PhiFuncNode(true,{
-                    PhiFunc::phiFunc(exts[(n+2*i-1)%n],exts[2*i],f,c.p,g),
+                    PhiFunc::phiFunc(exts[(2*n+2*i-1)%(2*n)],exts[2*i],f,c.p,g),
+//                    PhiFunc::phiFunc(exts[2*i],exts[(n+2*i-1)%n],f,c.p,g),
                     PhiFunc::phiFunc(c,g,p[i],f)});
             }
             return new PhiFuncNode(false,comp);
@@ -130,8 +131,8 @@ class PhiCircSeg: public PhiCompObj{
         static point circCompletion(point p0,point p1,point pc){
             double x0=p0.x, y0=p0.y, x1=p1.x, y1=p1.y, xc=pc.x, yc=pc.y;
             double c = ((x0-xc)*(x1-xc)+(y0-yc)*(y1-yc))/
-                       (xc*(y0-y1)+yc*(x1-x0)+x0*y1-x1*y0);
-            return point(xc-x0-x1+c*(y0-y1),yc-y0-y1+c*(x0-x1));
+                       (xc*(y0-y1)+x0*(y1-yc)+x1*(yc-y0));
+            return point(x0+x1-xc+c*(y0-y1),y0+y1-yc+c*(x1-x0));
         }
     public:
         point p0,p1;
@@ -139,7 +140,8 @@ class PhiCircSeg: public PhiCompObj{
         PhiPolygon P;
 
         PhiCircSeg(point p0i,point p1i,circle pci) : p0(p0i),p1(p1i),pc(pci),
-            P(PhiPolygon({p0,p1,this->circCompletion(p0i,p1i,pci.p)})) {};
+            P(PhiPolygon({p0,p1,this->circCompletion(p0i,p1i,pci.p)})) {
+        }
 
         PhiFunc* phiFunc(RotTrans f,PhiCompObj* O, RotTrans g){
             return O->phiFunc(g, this, f);
@@ -189,12 +191,15 @@ class PhiHat: public PhiCompObj{
         circle pc;  //Radius needs to be negative
         PhiPolygon P;
 
+        PhiHat(point p0i,point p1i,point p2i,circle ci) :
+            p0(p0i),p1(p1i),p2(p2i),pc(ci),P(PhiPolygon({p0i,p1i,p2i})) {}
+
         PhiHat(point p0i,point p1i,point p2i,double r) :
             p0(p0i),p1(p1i),p2(p2i),P(PhiPolygon({p0i,p1i,p2i})) {
             double dx = p0.x-p1.x,dy = p0.y-p1.y;
             double s = sqrt(4*r*r/(dx*dx+dy*dy)-1);
             pc = circle(point((p0.x+p1.x+dy*s)/2,(p0.y+p1.y-dx*s)/2),r);
-        };
+        }
 
         PhiFunc* phiFunc(RotTrans f,PhiCompObj* O, RotTrans g){
             return O->phiFunc(g, this, f);

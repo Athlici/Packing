@@ -8,6 +8,7 @@ class PhiFunc{
         virtual double eval(const double* x) = 0;
         virtual vector<PhiFuncPrim*> getIneqs(const double* x) = 0;
         virtual vector<int> getIndices(const double* x) = 0;
+        virtual vector<string> print(const double* x) = 0;
 
         static PhiFunc* phiFunc(point,point,RotTrans,point ,RotTrans);
         static PhiFunc* phiFunc(point,point,RotTrans,circle,RotTrans);
@@ -87,6 +88,17 @@ class PhiFuncNode: public PhiFunc{
                 return res;
             }
         }
+
+        vector<string> print(const double* x){
+            vector<string> out = {string(sense?"Min":"Max") + "-Node : " + std::to_string(eval(x))};
+            for(int i=0;i<nodes.size();i++){
+                vector<string> tmp = nodes[i]->print(x);
+                out.push_back("-" + tmp[0]);
+                for(int j=1;j<tmp.size();j++)
+                    out.push_back("|" + tmp[j]);
+            }
+            return out;
+        }
 };
 
 class PhiFuncCcScClRt : public PhiFuncPrim{
@@ -110,6 +122,10 @@ class PhiFuncCcScClRt : public PhiFuncPrim{
         RowVector3d f(x[i],sin(x[j+2]),cos(x[j+2]));
         Vector3d g(x[i],x[j],x[j+1]);
         return f*A*g-g[1]*g[1]-g[2]*g[2]+m*x[i]+b;
+    }
+
+    vector<string> print(const double* x){
+        return {"CcScClRt : " + std::to_string(eval(x))};
     }
 
     vector<int> getD1ind(){
@@ -162,6 +178,10 @@ class PhiFuncHCcScClRt : public PhiFuncPrim{
         return f*A*g+b;
     }
 
+    vector<string> print(const double* x){
+        return {"HCcScClRt : " + std::to_string(eval(x))};
+    }
+
     vector<int> getD1ind(){
         return {i,j,j+1,j+2};
     }
@@ -204,6 +224,11 @@ class PhiFuncRtRtMdfg : public PhiFuncPrim{
         return (y*A+f1*B)*f2+c;
     }
 
+    vector<string> print(const double* x){
+        return {"RtRtMdfg : " + std::to_string(eval(x)) 
+            + " " + std::to_string(i) + " " + std::to_string(j)};
+    }
+
     vector<int> getD1ind(){
         return {i,i+1,i+2,j,j+1,j+2};
     }
@@ -235,17 +260,17 @@ class PhiFuncRtRtMdfg : public PhiFuncPrim{
     }
 };
 
-class PhiFuncClRtClRt : public PhiFuncPrim{
+class PhiFuncClRtPtRt : public PhiFuncPrim{
     Matrix2d A,R1,R2;
-    double c,s;
+    double b,s;
     int i,j;
   public:
     PhiFuncClRtPtRt(circle c, RotTrans f, point p, RotTrans g, double o = 1){
         double cx = c.p.x, cy = c.p.y, px = p.x, py = p.y;
         A  << -cx*px-cy*py, cy*px-cx*py, cx*py-cy*px, -cx*px-cy*py;
         R1 <<  py,-px,-px,-py; R2 << -cy, cx, cx, cy;
-        c = cx*cx+px*px+cy*cy+py*py-r*r;
-        s = o; A*=2*o; R1*=2*o; R2*=2*o; c*=o;
+        b = cx*cx+px*px+cy*cy+py*py-c.r*c.r;
+        s = o; A*=2*o; R1*=2*o; R2*=2*o; b*=o;
         i = f.ind; j = g.ind;
     }
     
@@ -253,7 +278,11 @@ class PhiFuncClRtClRt : public PhiFuncPrim{
         RowVector2d f1(sin(x[i+2]),cos(x[i+2]));
         Vector2d    f2(sin(x[j+2]),cos(x[j+2]));
         Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
-        return y.dot(s*y+R2*f2)+f1*(R1*y+A*f2)+c;
+        return y.dot(s*y+R2*f2)+f1*(R1*y+A*f2)+b;
+    }
+
+    vector<string> print(const double* x){
+        return {"ClRtPtRt : " + std::to_string(eval(x))};
     }
 
     vector<int> getD1ind(){
