@@ -167,7 +167,7 @@ class PhiFuncHCcScClRt : public PhiFuncPrim{
   public:
     PhiFuncHCcScClRt(circle cc,Scale f,circle c,point p,RotTrans g,double s){
         double ox=cc.p.x, oy=cc.p.y, cx=c.p.x, cy=c.p.y;
-        A << ox*(cx-p.x)+oy*(cy-p.y),ox*(p.x-cx)+oy*(cy-p.y),p.x-cx,p.y-cy,p.y-cy,cx-p.y;
+        A << ox*(cx-p.x)+oy*(cy-p.y),ox*(cy-p.y)+oy*(p.x-cx),p.x-cx,p.y-cy,p.y-cy,cx-p.x;
         b = s*(cx*p.y-cy*p.x); A*=s;
         i = f.ind; j = g.ind;
     }
@@ -278,7 +278,7 @@ class PhiFuncClRtPtRt : public PhiFuncPrim{
         RowVector2d f1(sin(x[i+2]),cos(x[i+2]));
         Vector2d    f2(sin(x[j+2]),cos(x[j+2]));
         Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
-        return y.dot(s*y+R2*f2)+f1*(R1*y+A*f2)+b;
+        return y.dot(s*y+R1*f2)+f1*(R2*y+A*f2)+b;
     }
 
     vector<string> print(const double* x){

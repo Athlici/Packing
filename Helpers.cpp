@@ -11,16 +11,9 @@ circle toCircle(XMLElement* c,double s=1){
     return circle(toPoint(c),(s*r>0)?r:-r);
 }
 
-PhiCompObj* regularStar(int n,double r){
-    double phi=2*M_PI/n;
-    vector<point> v(n);
-    for(int i=0;i<n;i++)
-        v[i]=point(cos(phi*i),sin(phi*i));
-    vector<PhiCompObj*> comp(n);
-    for(int i=0;i<n;i++)
-        comp[i]=new PhiHat(v[i],v[(i+1)%n],point(0,0),r);
-    return new PhiCompNode(comp);
-};
+//importXML(XMLDocument* doc,XMLNode box*,vector<XMLElement*>& objsXML,
+//          PhiInfObj* C,vector<PhiCompObj*>& objs,vector<RotTrans>& rt){
+//}
 
 tuple<point,point> moveLine(point p0,point p1,double r){
     double dx = p0.x-p1.x, dy = p0.y-p1.y;
@@ -46,7 +39,7 @@ circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     do{
         SmartPtr<dNLP> nlp = new dNLP(obj,vars,phi->getIneqs(x),x);
         app->OptimizeTNLP(nlp);
-        newseg = phi->getIneqs(x) != phi->getIneqs(nlp->res);
+        newseg = (nlp->res[0] < x[0]) && (phi->getIneqs(x) != phi->getIneqs(nlp->res));
         for(int i=0;i<3;i++) x[i] = nlp->res[i];
     }while(newseg);
     

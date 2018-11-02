@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
         x[3*i+2] = pts[i].y+bc[i].p.y;
         x[3*i+3] = 0;
     }
-    for(int i=0;i<10&&phi->eval(x)<-0.01;i++){
+    for(int i=0;i<10&&phi->eval(x)<-0.001;i++){
         x[0]*=2;
     }   //TODO: Contingency
 
@@ -106,14 +106,18 @@ int main(int argc, char** argv) {
     do{
         SmartPtr<dNLP> nlp = new dNLP(f,vars,phi->getIneqs(x),x);
         app->OptimizeTNLP(nlp);
-//        newseg = phi->getIneqs(x) != phi->getIneqs(nlp->res);
-        newseg = nlp->res[0] < x[0];
-        for(int i=0;i<3*n+1;i++) x[i] = nlp->res[i];
+        newseg = phi->getIneqs(x) != phi->getIneqs(nlp->res);
+//        double con = phi->eval(nlp->res);
+//        newseg = (nlp->res[0] < x[0]) && (-0.001 < con) &&
+//                 (phi->getIneqs(x) != phi->getIneqs(nlp->res));
+//        if(-0.001 < con)
+            for(int i=0;i<3*n+1;i++)
+                x[i] = nlp->res[i];
     }while(newseg);
 
-    vector<string> res = phi->print(x);
-    for(int i=0;i<res.size();i++)
-      std::cout<<res[i]<<"\n";
+//    vector<string> res = phi->print(x);
+//    for(int i=0;i<res.size();i++)
+//      std::cout<<res[i]<<"\n";
 
     XMLElement* tmp = doc.NewElement("Solution");
     tmp->SetAttribute("r",x[0]);

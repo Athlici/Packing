@@ -176,8 +176,8 @@ class PhiCircSeg: public PhiCompObj{
                 PhiFunc::phiFunc(C->c,f,p1,g),
                 new PhiFuncNode(false,{ //TODO add C->pc.r+pc.r>=0
                     PhiFunc::phiFunc(C->c,f,pc,g),
-                    PhiFunc::phiFunc(C->c,f,pc,p0,g, 1),
-                    PhiFunc::phiFunc(C->c,f,pc,p1,g,-1)})});
+                    PhiFunc::phiFunc(C->c,f,pc,p0,g,-1),
+                    PhiFunc::phiFunc(C->c,f,pc,p1,g, 1)})});
         }
 };
 
@@ -215,7 +215,7 @@ class PhiHat: public PhiCompObj{
 
         PhiFunc* phiFuncG(RotTrans f, PhiPolygon* Q, RotTrans g){
             int m = Q->n;
-            vector<PhiFunc*> comp(2*m+2);    //P1,P2 not in Q, if q over l then q in C
+            vector<PhiFunc*> comp(m+2);    //P1,P2 not in Q, if q over l then q in C
             for(int i=0;i<m;i++)
                 comp[i] = new PhiFuncNode(false,{
                     PhiFunc::phiFunc(p0,p1,f,Q->p[i],g),
