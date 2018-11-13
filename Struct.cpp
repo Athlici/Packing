@@ -5,15 +5,25 @@ struct var{
     string name;
 };
 
-struct point{  //TODO: make Vector2d
-    point() {};
-    point(double xi,double yi) : x(xi),y(yi) {};
-    double x,y;
+class point{  //TODO: make Vector2d
+    public:
+        point() {};
+        point(double xi,double yi) : x(xi),y(yi) {};
+        double x,y;
+
+        void move(point p){
+            x+=p.x; y+=p.y;
+        }
 };
 
-struct circle{
-    circle() {};
-    circle(point pi,double ri) : p(pi),r(ri) {};
-    point p;
-    double r;
+class circle{
+    public:
+        circle() {};
+        circle(point pi,double ri) : p(pi),r(ri) {};
+        point p;
+        double r;
+
+        void move(point pd){
+            p.move(pd);
+        }
 };

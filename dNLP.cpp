@@ -27,7 +27,7 @@ class dNLP : public TNLP{
         jacl[i] = phix[i]->getD1ind().size();
         njac += jacl[i];
       }
-  
+
       int hesnz[n*n] = {0};
       for(int i=0;i<m;i++){
         vector<tuple<int,int>> tmp = phix[i]->getD2ind();

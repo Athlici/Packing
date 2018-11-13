@@ -3,102 +3,101 @@ class PhiFuncPrim;
 tuple<point,point> moveLine(point,point,double);
 
 class PhiFunc{
-        static double sign(double x){return ((x>=0) ? 1 : -1);}
-    public:
-        virtual double eval(const double* x) = 0;
-        virtual vector<PhiFuncPrim*> getIneqs(const double* x) = 0;
-        virtual vector<int> getIndices(const double* x) = 0;
-        virtual vector<string> print(const double* x) = 0;
+    static double sign(double x){return ((x>=0) ? 1 : -1);}
+  public:
+    virtual double eval(const double* x) = 0;
+    virtual vector<PhiFuncPrim*> getIneqs(const double* x) = 0;
+    virtual vector<int> getIndices(const double* x) = 0;
+    virtual vector<string> print(const double* x) = 0;
 
-        static PhiFunc* phiFunc(point,point,RotTrans,point ,RotTrans);
-        static PhiFunc* phiFunc(point,point,RotTrans,circle,RotTrans);
-        static PhiFunc* phiFunc(circle,RotTrans,point ,RotTrans);
-        static PhiFunc* phiFunc(circle,RotTrans,circle,RotTrans);
-        static PhiFunc* phiFunc(circle,Scale,point ,RotTrans);
-        static PhiFunc* phiFunc(circle,Scale,circle,RotTrans);
-        static PhiFunc* phiFunc(circle,RotTrans,circle,point,RotTrans,double);
-        static PhiFunc* phiFunc(circle,Scale   ,circle,point,RotTrans,double);
+    static PhiFunc* phiFunc(point,point,RotTrans,point ,RotTrans);
+    static PhiFunc* phiFunc(point,point,RotTrans,circle,RotTrans);
+    static PhiFunc* phiFunc(circle,RotTrans,point ,RotTrans);
+    static PhiFunc* phiFunc(circle,RotTrans,circle,RotTrans);
+    static PhiFunc* phiFunc(circle,Scale,point ,RotTrans);
+    static PhiFunc* phiFunc(circle,Scale,circle,RotTrans);
+    static PhiFunc* phiFunc(circle,RotTrans,circle,point,RotTrans,double);
+    static PhiFunc* phiFunc(circle,Scale   ,circle,point,RotTrans,double);
 };
 
 class PhiFuncPrim: public PhiFunc{
-    public:
-        virtual void getD1(const double* x,double* res) = 0;
-        virtual vector<int> getD1ind() = 0;
-        virtual void getD2(const double* x,double* res) = 0;
-        virtual vector<tuple<int,int>> getD2ind() = 0;
-        vector<PhiFuncPrim*> getIneqs (const double* x){return {this};}
-        vector<int> getIndices (const double* x){return {};}
+  public:
+    virtual void getD1(const double* x,double* res) = 0;
+    virtual vector<int> getD1ind() = 0;
+    virtual void getD2(const double* x,double* res) = 0;
+    virtual vector<tuple<int,int>> getD2ind() = 0;
+    vector<PhiFuncPrim*> getIneqs (const double* x){return {this};}
+    vector<int> getIndices (const double* x){return {};}
 };
 
 class PhiFuncNode: public PhiFunc{
-    private:
-        bool sense; //0 -> max,1 -> min
-        vector<PhiFunc*> nodes;
+    bool sense; //0 -> max,1 -> min
+    vector<PhiFunc*> nodes;
 
-        int argmax(const double* x){
-            int ind = 0;
-            double val = nodes[0]->eval(x);
-            for(int i=1;i<nodes.size();i++){
-                double tmp = nodes[i]->eval(x);
-                if(tmp>val){
-                    val = tmp;
-                    ind = i;
-                }
+    int argmax(const double* x){
+        int ind = 0;
+        double val = nodes[0]->eval(x);
+        for(int i=1;i<nodes.size();i++){
+            double tmp = nodes[i]->eval(x);
+            if(tmp>val){
+                val = tmp;
+                ind = i;
             }
-            return ind;
         }
+        return ind;
+    }
 
-    public:
-        PhiFuncNode(bool s,vector<PhiFunc*> n) : sense(s),nodes(n) {};
+  public:
+    PhiFuncNode(bool s,vector<PhiFunc*> n) : sense(s),nodes(n) {};
 
-        double eval(const double* x){
-            double res = nodes[0]->eval(x);
-            for(int i=1;i<nodes.size();i++){
-                double tmp = nodes[i]->eval(x);
-                if(sense ^ (tmp>res))
-                    res=tmp;
+    double eval(const double* x){
+        double res = nodes[0]->eval(x);
+        for(int i=1;i<nodes.size();i++){
+            double tmp = nodes[i]->eval(x);
+            if(sense ^ (tmp>res))
+                res=tmp;
+        }
+        return res;
+    }
+
+    vector<PhiFuncPrim*> getIneqs(const double* x){
+        if(sense){
+            vector<PhiFuncPrim*> res = {};
+            for(int i=0;i<nodes.size();i++){
+                vector<PhiFuncPrim*> tmp = nodes[i]->getIneqs(x);
+                res.insert(res.end(),tmp.begin(),tmp.end());
             }
             return res;
-        }
+        } else
+            return nodes[argmax(x)]->getIneqs(x);
+    }
 
-        vector<PhiFuncPrim*> getIneqs(const double* x){
-            if(sense){
-                vector<PhiFuncPrim*> res = {};
-                for(int i=0;i<nodes.size();i++){
-                    vector<PhiFuncPrim*> tmp = nodes[i]->getIneqs(x);
-                    res.insert(res.end(),tmp.begin(),tmp.end());
-                }
-                return res;
-            } else
-                return nodes[argmax(x)]->getIneqs(x);
-        }
-
-        vector<int> getIndices(const double* x){
-            if(sense){
-                vector<int> res = {};
-                for(int i=0;i<nodes.size();i++){
-                    vector<int> tmp = nodes[i]->getIndices(x);
-                    res.insert(res.end(),tmp.begin(),tmp.end());
-                }
-                return res;
-            } else {
-                int ind = argmax(x);
-                vector<int> res = nodes[ind]->getIndices(x);
-                res.push_back(ind);
-                return res;
-            }
-        }
-
-        vector<string> print(const double* x){
-            vector<string> out = {string(sense?"Min":"Max") + "-Node : " + std::to_string(eval(x))};
+    vector<int> getIndices(const double* x){
+        if(sense){
+            vector<int> res = {};
             for(int i=0;i<nodes.size();i++){
-                vector<string> tmp = nodes[i]->print(x);
-                out.push_back("-" + tmp[0]);
-                for(int j=1;j<tmp.size();j++)
-                    out.push_back("|" + tmp[j]);
+                vector<int> tmp = nodes[i]->getIndices(x);
+                res.insert(res.end(),tmp.begin(),tmp.end());
             }
-            return out;
+            return res;
+        } else {
+            int ind = argmax(x);
+            vector<int> res = nodes[ind]->getIndices(x);
+            res.push_back(ind);
+            return res;
         }
+    }
+
+    vector<string> print(const double* x){
+        vector<string> out = {string(sense?"Min":"Max") + "-Node : " + std::to_string(eval(x))};
+        for(int i=0;i<nodes.size();i++){
+            vector<string> tmp = nodes[i]->print(x);
+            out.push_back("-" + tmp[0]);
+            for(int j=1;j<tmp.size();j++)
+                out.push_back("|" + tmp[j]);
+        }
+        return out;
+    }
 };
 
 class PhiFuncCcScClRt : public PhiFuncPrim{
@@ -108,6 +107,7 @@ class PhiFuncCcScClRt : public PhiFuncPrim{
     Matrix3d A;
     double m,b;
     int i,j;
+
   public:
     PhiFuncCcScClRt(circle cc,Scale f,circle c,RotTrans g){
         double xc=cc.p.x, yc=cc.p.y, px=c.p.x, py=c.p.y;
@@ -164,6 +164,7 @@ class PhiFuncHCcScClRt : public PhiFuncPrim{
     Eigen::Matrix<double,3,2> A;
     double b;
     int i,j;
+
   public:
     PhiFuncHCcScClRt(circle cc,Scale f,circle c,point p,RotTrans g,double s){
         double ox=cc.p.x, oy=cc.p.y, cx=c.p.x, cy=c.p.y;
@@ -214,6 +215,7 @@ class PhiFuncRtRtMdfg : public PhiFuncPrim{
     Matrix2d A,B;
     double c;
     int i,j;
+
   public:
     PhiFuncRtRtMdfg(Matrix2d Ai, Matrix2d Bi, double ci, RotTrans f, RotTrans g) :
         A(Ai),B(Bi),c(ci),i(f.ind),j(g.ind) {};
@@ -264,6 +266,7 @@ class PhiFuncClRtPtRt : public PhiFuncPrim{
     Matrix2d A,R1,R2;
     double b,s;
     int i,j;
+
   public:
     PhiFuncClRtPtRt(circle c, RotTrans f, point p, RotTrans g, double o = 1){
         double cx = c.p.x, cy = c.p.y, px = p.x, py = p.y;

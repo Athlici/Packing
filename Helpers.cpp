@@ -11,9 +11,9 @@ circle toCircle(XMLElement* c,double s=1){
     return circle(toPoint(c),(s*r>0)?r:-r);
 }
 
-//importXML(XMLDocument* doc,XMLNode box*,vector<XMLElement*>& objsXML,
-//          PhiInfObj* C,vector<PhiCompObj*>& objs,vector<RotTrans>& rt){
-//}
+//tuple<model,xmlPkg> importXML(string filepath){}
+
+//void exportXML(xmlPkg,solution){}
 
 tuple<point,point> moveLine(point p0,point p1,double r){
     double dx = p0.x-p1.x, dy = p0.y-p1.y;
@@ -46,17 +46,17 @@ circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     return circle(point(x[1],x[2]),x[0]);
 }
 
-vector<point> circlePack(vector<circle> cs){
-    int n = cs.size();
+vector<point> circlePack(vector<double> cr){
+    int n = cr.size();
     vector<tuple<circle,int>> chain(n);
-    chain[0] = {circle(point(-cs[0].r,0),cs[0].r),0};
-    chain[1] = {circle(point( cs[1].r,0),cs[1].r),1};
+    chain[0] = {circle(point(-cr[0],0),cr[0]),0};
+    chain[1] = {circle(point( cr[1],0),cr[1]),1};
 
     for(int i=2;i<n;i++){
         bool unplaced = true;
         for(int j=0;unplaced;j++){
             circle c1 = get<0>(chain[j]), c2 = get<0>(chain[(j+1)%i]);
-            double x1=c1.p.x, y1=c1.p.y, r1=c1.r, x2=c2.p.x, y2=c2.p.y, r2=c2.r, r=cs[i].r;
+            double x1=c1.p.x, y1=c1.p.y, r1=c1.r, x2=c2.p.x, y2=c2.p.y, r2=c2.r, r=cr[i];
             double dx=x1-x2, dy=y1-y2, dr=r1-r2, dx2=dx*dx, dy2=dy*dy, sr=r1+r2+2*r;
             double n1 = sqrt((dx2+dy2-dr*dr)*(sr*sr-dx2-dy2)), n2 = dx2+dy2;
             point pos = point((x1+x2-(n1*dy+dr*sr*dx)/n2)/2,(y1+y2+(n1*dx-dr*sr*dy)/n2)/2);
