@@ -16,6 +16,8 @@ class PhiFunc{
     static PhiFunc* phiFunc(circle,RotTrans,circle,RotTrans);
     static PhiFunc* phiFunc(circle,Scale,point ,RotTrans);
     static PhiFunc* phiFunc(circle,Scale,circle,RotTrans);
+    static PhiFunc* phiFunc(point,point,Scale,point ,RotTrans);
+    static PhiFunc* phiFunc(point,point,Scale,circle,RotTrans);
     static PhiFunc* phiFunc(circle,RotTrans,circle,point,RotTrans,double);
     static PhiFunc* phiFunc(circle,Scale   ,circle,point,RotTrans,double);
 };
@@ -97,6 +99,52 @@ class PhiFuncNode: public PhiFunc{
                 out.push_back("|" + tmp[j]);
         }
         return out;
+    }
+};
+
+class PhiFuncLnScClRt : public PhiFuncPrim{
+    RowVector3d trs;
+    RowVector2d rot;
+    double o;
+    int i,j;
+
+  public:
+    PhiFuncLnScClRt(point l0,point l1,Scale f,circle c,RotTrans g){
+        double x=c.p.x, y=c.p.y, dx=l0.x-l1.x, dy=l0.y-l1.y, det=l0.x*l1.y-l1.x*l0.y;
+        trs << -det,-dy, dx; rot << dx*x+dy*y,-dy*x+dx*y;
+        double n=1/sqrt(dx*dx+dy*dy);
+        trs *= n; rot *= n;
+        o = -c.r;
+        i = f.ind; j = g.ind;
+    }
+
+    double eval(const double* x){
+        Vector3d f(x[i],x[j],x[j+1]);
+        Vector2d g(sin(x[j+2]),cos(x[j+2]));
+        return trs.dot(f)+rot.dot(g)+o;
+    }
+
+    vector<string> print(const double* x){
+        return {"CcScClRt : " + std::to_string(eval(x))};
+    }
+
+    void getD1(const double* x,double* res){
+        Vector2d g(cos(x[j+2]),-sin(x[j+2]));
+        res[0] = trs[0]; res[1] = trs[1]; res[2] = trs[2];
+        res[3] = rot*g;
+    }
+
+    vector<int> getD1ind(){
+        return {i,j,j+1,j+2};
+    }
+
+    void getD2(const double* x,double* res){
+        Vector2d g(sin(x[j+2]),cos(x[j+2]));
+        res[0] = -rot*g;
+    }
+
+    vector<tuple<int,int>> getD2ind(){
+        return {{j+2,j+2}};
     }
 };
 
@@ -355,6 +403,14 @@ PhiFunc* PhiFunc::phiFunc(circle cc,Scale f,point p,RotTrans g){
 
 PhiFunc* PhiFunc::phiFunc(circle cc,Scale f,circle c,RotTrans g){
     return new PhiFuncCcScClRt(cc,f,c,g);
+}
+
+PhiFunc* PhiFunc::phiFunc(point p0,point p1,Scale f,point p,RotTrans g){
+    return new PhiFuncLnScClRt(p0,p1,f,circle(p,0),g);
+}
+
+PhiFunc* PhiFunc::phiFunc(point p0,point p1,Scale f,circle c,RotTrans g){
+    return new PhiFuncLnScClRt(p0,p1,f,c,g);
 }
 
 PhiFunc* PhiFunc::phiFunc(circle cc,RotTrans f,circle pc,point p,RotTrans g,double s){

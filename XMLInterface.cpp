@@ -1,27 +1,3 @@
-class Model{
-  public:
-    vector<var> vars = {var(0,2e19)};
-    Objective* f = new FirstVar();
-    PhiInfObj* C;
-    Scale sc = Scale(0);
-    vector<PhiCompObj*> objs;
-    vector<RotTrans> rt;
-
-    Model() {};
-
-    PhiFunc* createPhiFunc(){
-        int n = objs.size();
-        vector<PhiFunc*> comp(n*(n+1)/2);
-        for(int i=0;i<n;i++)
-            comp[i] = phiFunc(C,sc,objs[i],rt[i]);
-        int ind = n;
-        for(int i=0;i<n;i++)
-            for(int j=i+1;j<n;j++)
-                comp[ind++] = phiFunc(objs[i],rt[i],objs[j],rt[j]);
-        return new PhiFuncNode(true,comp);
-    }
-};
-
 class XMLInterface{
     XMLDocument doc;
     XMLNode* box;
@@ -54,6 +30,19 @@ class XMLInterface{
         return 0;
     }
 
+    PhiInfObj* parseInfObj(XMLElement* obj){
+        if(!strcmp(obj->Name(),"CircCompl")){
+            XMLElement* c=obj->FirstChildElement("Circle");
+            return new PhiCircCompl(toCircle(c));
+        }
+        if(!strcmp(obj->Name(),"LineCompl")){
+            XMLElement* p0=obj->FirstChildElement("Point");
+            XMLElement* p1=p0->NextSiblingElement("Point");
+            return new PhiLineCompl(toPoint(p0),toPoint(p1));
+        }
+        return 0;
+    }
+
   public:
     XMLInterface() {};
 
@@ -63,13 +52,18 @@ class XMLInterface{
 
     Model* parse(){
         Model* model = new Model();
+        model->f = new FirstVar();
         for(XMLNode* node=doc.FirstChild()->FirstChild();node!=nullptr;node=node->NextSibling()){
             if(!strcmp(node->Value(),"Container")){
+                vector<PhiInfObj*> infObjs;
+                for(XMLElement* obj=node->FirstChildElement();obj!=nullptr;obj=obj->NextSiblingElement())
+                    infObjs.push_back(parseInfObj(obj));
                 box = node;
-                XMLElement* cont = box->FirstChildElement();
-                if(!strcmp(cont->Value(),"CircCompl"))
-                    model->C = new PhiCircCompl(toCircle(cont));
-            }if(!strcmp(node->Value(),"Objects")){
+                model->sc = Scale(0);
+                model->vars.push_back(var(0,2e19));
+                model->C = infObjs;
+            }
+            if(!strcmp(node->Value(),"Objects")){
                 for(XMLElement* obj=node->FirstChildElement();obj!=nullptr;obj=obj->NextSiblingElement()){
                     objsXML.push_back(obj);
                     model->rt.push_back(RotTrans(model->vars.size()));

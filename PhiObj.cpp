@@ -1,4 +1,5 @@
 class PhiCircCompl;
+class PhiLineCompl;
 class PhiPolygon;
 class PhiCircSeg;
 class PhiHat;
@@ -10,6 +11,7 @@ class PhiCompObj{
         virtual PhiFunc* phiFunc(RotTrans, PhiCircSeg*, RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiHat*    , RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiCircCompl*,  Scale) = 0;
+        virtual PhiFunc* phiFunc(RotTrans, PhiLineCompl*,  Scale) = 0;
         virtual void move(point) = 0;
 };
 
@@ -22,6 +24,16 @@ class PhiCircCompl: public PhiInfObj{
     public:
         circle c;
         PhiCircCompl(circle ci) : c(ci) {}
+
+        PhiFunc* phiFunc(Scale f, PhiCompObj* B, RotTrans g){
+            return B->phiFunc(g, this, f);
+        }
+};
+
+class PhiLineCompl: public PhiInfObj{
+    public:
+        point p0,p1;
+        PhiLineCompl(point p0i, point p1i) : p0(p0i),p1(p0i) {}
 
         PhiFunc* phiFunc(Scale f, PhiCompObj* B, RotTrans g){
             return B->phiFunc(g, this, f);
@@ -60,6 +72,10 @@ class PhiCompNode: public PhiCompObj{
         
         PhiFunc* phiFunc(RotTrans f,PhiCircCompl* C,Scale g){
             return phiFuncM(f,C,g);
+        }
+
+        PhiFunc* phiFunc(RotTrans f, PhiLineCompl* L, Scale g){
+            return phiFuncM(f,L,g);
         }
 
         void move(point p){
@@ -132,6 +148,13 @@ class PhiPolygon: public PhiCompObj{
             return new PhiFuncNode(true,comp);
         }
 
+        PhiFunc* phiFunc(RotTrans g, PhiLineCompl* L, Scale f){
+            vector<PhiFunc*> comp(n);
+            for(int i=0;i<n;i++)
+                comp[i] = PhiFunc::phiFunc(L->p0,L->p1,f,p[i],g);
+            return new PhiFuncNode(true,comp);
+        }
+
         void move(point pd){
             for(int i=0;i<n;i++)
                 p[i].move(pd);
@@ -146,7 +169,7 @@ class PhiCircSeg: public PhiCompObj{
             return point(x0+x1-xc+c*(y0-y1),y0+y1-yc+c*(x1-x0));
         }
     public:
-        point p0,p1;
+        point p0,p1;    //Eliminate as well?
         circle pc;
         PhiPolygon P;
 
@@ -191,6 +214,15 @@ class PhiCircSeg: public PhiCompObj{
                     PhiFunc::phiFunc(C->c,f,pc,p1,g, 1)})});
         }
 
+        PhiFunc* phiFunc(RotTrans g, PhiLineCompl* L, Scale f){
+            return new PhiFuncNode(true,{
+                PhiFunc::phiFunc(L->p0,L->p1,f,p0,g),
+                PhiFunc::phiFunc(L->p0,L->p1,f,p1,g),
+                new PhiFuncNode(false,{
+                    PhiFunc::phiFunc(L->p0,L->p1,f,pc,g),
+                    PhiFunc::phiFunc(L->p0,L->p1,f,P.p[2],g)})});
+        }
+
         void move(point pd){
             p0.move(pd);p1.move(pd);pc.move(pd);
             P.move(pd);
@@ -203,8 +235,8 @@ PhiFunc* PhiPolygon::phiFunc(RotTrans f, PhiCircSeg* C, RotTrans g){
 
 class PhiHat: public PhiCompObj{
     public:
-        point p0,p1,p2;
-        circle pc;  //Radius needs to be negative
+        point p0,p1,p2;     //Get rid of this?
+        circle pc;          //Radius needs to be negative
         PhiPolygon P;
 
         PhiHat(point p0i,point p1i,point p2i,circle ci) :
@@ -285,6 +317,10 @@ class PhiHat: public PhiCompObj{
 
         PhiFunc* phiFunc(RotTrans g, PhiCircCompl* C, Scale f){
             return P.phiFunc(g,C,f);
+        }
+
+        PhiFunc* phiFunc(RotTrans g, PhiLineCompl* L, Scale f){
+            return P.phiFunc(g,L,f);
         }
 
         void move(point pd){

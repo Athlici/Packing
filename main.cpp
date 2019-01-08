@@ -23,13 +23,14 @@ using namespace tinyxml2;
 #include "Objective.cpp"
 #include "dNLP.cpp"
 #include "Helpers.cpp"
-#include "Containers.cpp"
+#include "Model.cpp"
+#include "XMLInterface.cpp"
 
 double randperm=20,randorient=5;
 
 int main(int argc, char** argv) {
 
-    //Ipopt initilization
+    //Ipopt initialization
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetIntegerValue("print_level", 2);
     app->Options()->SetIntegerValue("max_iter", 1000);
@@ -44,6 +45,7 @@ int main(int argc, char** argv) {
         return (int) status;
     }
 
+    //random input initialization
     std::default_random_engine randgen(std::chrono::system_clock::now().time_since_epoch().count());
     std::uniform_real_distribution<double> pidist(-M_PI,M_PI);
 
@@ -54,14 +56,13 @@ int main(int argc, char** argv) {
         return 1;
     }
     Model* model = xml.parse();
-
     int n = model->objs.size();
 
     //calculate bounding circles for all objects
     vector<circle> bc(n);
     for(int i=0;i<n;i++){
         bc[i] = boundCircMod(app,model->objs[i]);
-        model->objs[i]->move(bc[i].p); //move to bounding circle to origin
+        model->objs[i]->move(bc[i].p); //move bounding circle center to the origin
     }
 
     //create distance functions for all objects

@@ -1,0 +1,26 @@
+Overview
+--------
+
+Given a set of irregular 2D objects this program finds an arrangement such that the size of their container is minimized. This can be usefull to optimize material or space usage in cutting and packing applications.
+The objects can be unions of convex polygons as well as convex and concave circle segments which are subject to continuous translation and rotations.
+The container can be an intersection of disks and half-spaces which are subject to scaling.
+
+Usage
+-----
+
+XML
+Infographics
+
+Installation
+------------
+
+IpOpt!
+
+make
+
+How it works
+------------
+
+PhiFunctions (paper)
+Heuristic
+

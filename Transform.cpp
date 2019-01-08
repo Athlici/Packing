@@ -6,6 +6,7 @@ class Transform{
 class Scale: public Transform{
   public:
     int ind;
+    Scale(){};
     Scale(int i) : ind(i) {}
 };
 
