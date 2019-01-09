@@ -1,6 +1,15 @@
 <Root>
     <Container>
-        <CircCompl x="0" y="0" r="-1"/>
+        <CircCompl>
+            <Circle x="0.000000" y="0.000000" r="-1.000000"/>
+        </CircCompl>
+<!--        <CircCompl>
+            <Circle x="0.500000" y="0.500000" r="-1.000000"/>
+        </CircCompl>
+        <LineCompl>
+            <Point x="0.500000" y="1.000000"/>
+            <Point x="0.500000" y="-1.000000"/>
+        </LineCompl>-->
     </Container>
     
     <Objects>

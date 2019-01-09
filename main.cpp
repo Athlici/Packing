@@ -8,7 +8,8 @@
 #include <iostream>
 #include <algorithm>
 #include <eigen3/Eigen/Dense>
-#include <coin/IpIpoptApplication.hpp>
+//#include <coin/IpIpoptApplication.hpp>
+#include "coin/IpIpoptApplication.hpp"
 #include "tinyxml2.h"
 
 using std::vector,std::tuple,std::get,std::string;
@@ -34,7 +35,7 @@ int main(int argc, char** argv) {
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetIntegerValue("print_level", 2);
     app->Options()->SetIntegerValue("max_iter", 1000);
-//    app->Options()->SetNumericValue("tol", 1e-6);
+    app->Options()->SetNumericValue("tol", 1e-6);
     app->Options()->SetStringValue("linear_solver", "ma57");
 //    app->Options()->SetStringValue("linear_solver", "mumps");
     app->Options()->SetStringValue("accept_every_trial_step", "yes"); //if it's stupid and it works, is it really stupid?
@@ -89,6 +90,7 @@ int main(int argc, char** argv) {
                 x[3*i+2] = pts[i].y;
                 x[3*i+3] = t;
             }
+            //TODO: Use a better initial packer here.
             for(int i=0;i<10&&phi->eval(x.data())<-0.001;i++)
                 x[0]*=2;
             initials[randorient*k+l] = x;
@@ -103,7 +105,7 @@ int main(int argc, char** argv) {
         bool notstalled;
         do{
             double prior = f->eval(n,x);
-            if(phi->eval(x) < 0.01){
+            if(phi->eval(x) < 0.01){    //relaxation
                 x[0]*=1.03;
                 for(int j=0;j<n;j++){
                     x[3*j+1]*=1.03;
