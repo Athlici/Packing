@@ -1,22 +1,25 @@
 using namespace Ipopt;
 
+//interface for objective functions
 class Objective{
-    public:
-        virtual Number eval(Index n, const Number* x) = 0;
-        virtual void grad(Index n, const Number* x,  Number* grad) = 0;
-    };
+  public:
+    virtual Number eval(Index n, const Number* x) = 0;
+    virtual void grad(Index n, const Number* x,  Number* grad) = 0;
+    //TODO add hessian
+  };
 
+//optimize the value of the first variable, for example for scaling
 class FirstVar: public Objective{
-    public:
-        FirstVar(){};
+   public:
+    FirstVar(){};
 
-        Number eval(Index n, const Number* x){
-            return x[0];
-        }
+    Number eval(Index n, const Number* x){
+      return x[0];
+    }
 
-        void grad(Index n, const Number* x,  Number* grad){
-            grad[0] = 1;
-            for(int i=1;i<n;i++)
-                grad[i] = 0;
-        }
+    void grad(Index n, const Number* x,  Number* grad){
+      grad[0] = 1;
+      for(int i=1;i<n;i++)
+        grad[i] = 0;
+    }
 };

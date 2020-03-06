@@ -1,11 +1,11 @@
-struct var{
+struct var{  //variables
     var() {};
     var(double lbi,double ubi) : lb(lbi),ub(ubi) {};
     double lb,ub;
     string name;
 };
 
-class point{  //TODO: make Vector2d
+class point{  //points TODO: make Vector2d?
     public:
         point() {};
         point(double xi,double yi) : x(xi),y(yi) {};
@@ -16,7 +16,7 @@ class point{  //TODO: make Vector2d
         }
 };
 
-class circle{
+class circle{  //circles
     public:
         circle() {};
         circle(point pi,double ri) : p(pi),r(ri) {};

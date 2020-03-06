@@ -17,28 +17,29 @@ using Eigen::Matrix2d,Eigen::Vector2d,Eigen::RowVector2d;
 using Eigen::Matrix3d,Eigen::Vector3d,Eigen::RowVector3d;
 using namespace tinyxml2;
 
-#include "Struct.cpp"
-#include "Transform.cpp"
-#include "PhiFunc.cpp"
-#include "PhiObj.cpp"
-#include "Objective.cpp"
-#include "dNLP.cpp"
-#include "Helpers.cpp"
-#include "Model.cpp"
-#include "XMLInterface.cpp"
+#include "Struct.cpp"           //data structures
+#include "Transform.cpp"        //object transformations
+#include "PhiFunc.cpp"          //the distance functions
+#include "PhiObj.cpp"           //object construction
+#include "Objective.cpp"        //objective funtions
+#include "dNLP.cpp"             //Ipopt interface
+#include "Helpers.cpp"          //miscellaneous helper functions
+#include "Model.cpp"            //the resulting model
+#include "XMLInterface.cpp"     //im- and export with XML
 
-double randperm=20,randorient=5;
+double randperm=5;              //number of starting permutations
+double randorient=2;            //number of starting orientations
 
 int main(int argc, char** argv) {
 
     //Ipopt initialization
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-    app->Options()->SetIntegerValue("print_level", 2);
-    app->Options()->SetIntegerValue("max_iter", 1000);
-    app->Options()->SetNumericValue("tol", 1e-6);
+    app->Options()->SetIntegerValue("print_level", 2);          //verbosity
+    app->Options()->SetIntegerValue("max_iter", 500);           //maximum iteration number
+    app->Options()->SetNumericValue("tol", 1e-6);               //tolerance
     app->Options()->SetStringValue("linear_solver", "ma57");
 //    app->Options()->SetStringValue("linear_solver", "mumps");
-    app->Options()->SetStringValue("accept_every_trial_step", "yes"); //if it's stupid and it works, is it really stupid?
+    app->Options()->SetStringValue("accept_every_trial_step", "yes"); //semi-succesfull workaround for unresolved bug
 //    app->Options()->SetStringValue("derivative_test", "second-order");
     ApplicationReturnStatus status = app->Initialize();
     if (status != Solve_Succeeded) {

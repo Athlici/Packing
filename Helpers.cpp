@@ -1,3 +1,4 @@
+//convert a point in XML into an object
 point toPoint(XMLElement* p){
     double x,y;
     p->QueryDoubleAttribute("x",&x);
@@ -5,6 +6,7 @@ point toPoint(XMLElement* p){
     return point(x,y);
 }
 
+//convert a circle in XML into an object
 circle toCircle(XMLElement* c,double s=1){
     double r;
     c->QueryDoubleAttribute("r",&r);
@@ -12,9 +14,9 @@ circle toCircle(XMLElement* c,double s=1){
 }
 
 //tuple<model,xmlPkg> importXML(string filepath){}
-
 //void exportXML(xmlPkg,solution){}
 
+//construct a parallel line with distance r
 tuple<point,point> moveLine(point p0,point p1,double r){
     double dx = p0.x-p1.x, dy = p0.y-p1.y;
     double c = r/sqrt(dx*dx+dy*dy);
@@ -22,6 +24,7 @@ tuple<point,point> moveLine(point p0,point p1,double r){
                               point(p1.x-dy*c,p1.y+dx*c));
 }
 
+//find the bounding circle of an object with Ipopt
 circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     Objective* obj = new FirstVar();
     vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19),var(0,0)};
@@ -46,6 +49,7 @@ circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     return circle(point(x[1],x[2]),x[0]);
 }
 
+//pack circles by iteratively placing them in the first free position of a path
 vector<point> circlePack(vector<double> cr){
     int n = cr.size();
     vector<tuple<circle,int>> chain(n);
