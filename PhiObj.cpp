@@ -1,21 +1,24 @@
-class PhiCircCompl;
-class PhiLineCompl;
-class PhiPolygon;
-class PhiCircSeg;
-class PhiHat;
+class PhiCircCompl;     //Circle Complement
+class PhiLineCompl;     //Line Complement
+class PhiPolygon;       //Polygon
+class PhiCircSeg;       //Circle Segment
+class PhiHat;           //Hat (Circle Complement Segment)
 
-class PhiCompObj{
+class PhiCompObj{       //Composite Objects (includes primitives)
     public:
+        //every object implements a distance function to all other objects
         virtual PhiFunc* phiFunc(RotTrans, PhiCompObj*, RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiPolygon*, RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiCircSeg*, RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiHat*    , RotTrans) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiCircCompl*,  Scale) = 0;
         virtual PhiFunc* phiFunc(RotTrans, PhiLineCompl*,  Scale) = 0;
+
+        //helper function to virtually move composite objects
         virtual void move(point) = 0;
 };
-
-class PhiInfObj{
+ 
+class PhiInfObj{        //Infinite Objects
     public:
         virtual PhiFunc* phiFunc(Scale f, PhiCompObj* B, RotTrans g) = 0;
 };
@@ -42,6 +45,7 @@ class PhiLineCompl: public PhiInfObj{
 
 //class PhiLine: public PhiCompObj{};
 
+//Union of Composite Objects
 class PhiCompNode: public PhiCompObj{
         vector<PhiCompObj*> nodes;
     public:
@@ -84,9 +88,10 @@ class PhiCompNode: public PhiCompObj{
         }
 };
 
+//Polygon (assumed to be convex)
 class PhiPolygon: public PhiCompObj{
     public:
-        vector<point> p;
+        vector<point> p;    //Counter clockwise enumeration of points
         int n;
 
         PhiPolygon(vector<point> pi) : p(pi),n(pi.size()) {}
@@ -95,6 +100,7 @@ class PhiPolygon: public PhiCompObj{
             return O->phiFunc(g, this, f);
         }
 
+        //a point is outside iff it is to the right of one side
         PhiFunc* phiFunc(RotTrans f,point q,RotTrans g){
             vector<PhiFunc*> comp(n);
             for(int i=0;i<n;i++)
@@ -102,6 +108,7 @@ class PhiPolygon: public PhiCompObj{
             return new PhiFuncNode(false,comp);
         }
 
+        //a circle is outside iff its center is outside the minkowsky sum 
         PhiFunc* phiFunc(RotTrans f,circle c,RotTrans g){
             vector<PhiFunc*> comp(2*n);
             vector<point>    exts(2*n);
@@ -127,6 +134,7 @@ class PhiPolygon: public PhiCompObj{
             return new PhiFuncNode(true,comp);
         }
 
+        //a convex and concave polygon don't intersect iff no edges are contained
         PhiFunc* phiFunc(RotTrans f, PhiPolygon* Q, RotTrans g){
             int m = Q->n;
             vector<PhiFunc*> comp(n+m);
@@ -137,10 +145,11 @@ class PhiPolygon: public PhiCompObj{
             return new PhiFuncNode(false,comp);
         }
 
+        //implemented in the complementary classes
         PhiFunc* phiFunc(RotTrans f, PhiCircSeg* C, RotTrans g);
-    
         PhiFunc* phiFunc(RotTrans f, PhiHat* H, RotTrans g);
 
+        //no intersection iff no point is contained
         PhiFunc* phiFunc(RotTrans g, PhiCircCompl* C, Scale f){
             vector<PhiFunc*> comp(n);
             for(int i=0;i<n;i++)
@@ -148,6 +157,7 @@ class PhiPolygon: public PhiCompObj{
             return new PhiFuncNode(true,comp);
         }
 
+        //no intersection iff no point is contained
         PhiFunc* phiFunc(RotTrans g, PhiLineCompl* L, Scale f){
             vector<PhiFunc*> comp(n);
             for(int i=0;i<n;i++)
@@ -162,6 +172,7 @@ class PhiPolygon: public PhiCompObj{
 };
 
 class PhiCircSeg: public PhiCompObj{
+        //find the point completing the bounding triangle of the circle segment
         static point circCompletion(point p0,point p1,point pc){
             double x0=p0.x, y0=p0.y, x1=p1.x, y1=p1.y, xc=pc.x, yc=pc.y;
             double c = ((x0-xc)*(x1-xc)+(y0-yc)*(y1-yc))/
