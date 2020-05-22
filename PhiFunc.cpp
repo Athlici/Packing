@@ -24,6 +24,7 @@ class PhiFunc{
 
 class PhiFuncPrim: public PhiFunc{
   public:
+    virtual vector<tuple<int,int,double>> getF() = 0;
     virtual void getD1(const double* x,double* res) = 0;
     virtual vector<int> getD1ind() = 0;
     virtual void getD2(const double* x,double* res) = 0;
@@ -124,6 +125,16 @@ class PhiFuncLnScClRt : public PhiFuncPrim{
         return trs.dot(f)+rot.dot(g)+o;
     }
 
+//-i->(i-1)th var cos
+//0->no var
+//i->(i-1)th var (pot sin)
+//constant (0,0)
+//linear (0,i)
+//quadratic (i,j)
+    vector<tuple<int,int,double>> getF(){
+        return {{0,i+1,trs[0]},{0,j+1,trs[1]},{0,j+2,trs[2]},{0,j+3,rot[0]},{0,-j-3,rot[1]},{0,0,o}};
+    }
+
     vector<string> print(const double* x){
         return {"CcScClRt : " + std::to_string(eval(x))};
     }
@@ -170,6 +181,13 @@ class PhiFuncCcScClRt : public PhiFuncPrim{
         RowVector3d f(x[i],sin(x[j+2]),cos(x[j+2]));
         Vector3d g(x[i],x[j],x[j+1]);
         return f*A*g-g[1]*g[1]-g[2]*g[2]+m*x[i]+b;
+    }
+
+    vector<tuple<int,int,double>> getF(){
+        return {{ i+1,i+1,A(0,0)},{ i+1,j+1,A(0,1)},{ i+1,j+2,A(0,2)},
+                { j+3,i+1,A(1,0)},{ j+3,j+1,A(1,1)},{ j+3,j+2,A(1,2)},
+                {-j-3,i+1,A(2,0)},{-j-3,j+1,A(2,1)},{-j-3,j+2,A(2,2)},
+                {j+1,j+1,-1},{j+2,j+2,-1},{0,i+1,m},{0,0,b}};
     }
 
     vector<string> print(const double* x){
@@ -227,6 +245,12 @@ class PhiFuncHCcScClRt : public PhiFuncPrim{
         return f*A*g+b;
     }
 
+    vector<tuple<int,int,double>> getF(){
+        return {{i+1,j+3,A(0,0)},{i+1,-j-3,A(0,1)},
+                {j+1,j+3,A(1,0)},{j+1,-j-3,A(1,1)},
+                {j+2,j+3,A(2,0)},{j+2,-j-3,A(2,1)},{0,0,b}};
+    }
+
     vector<string> print(const double* x){
         return {"HCcScClRt : " + std::to_string(eval(x))};
     }
@@ -272,6 +296,12 @@ class PhiFuncRtRtMdfg : public PhiFuncPrim{
         RowVector2d f1(sin(x[i+2]),cos(x[i+2])),y(x[i]-x[j],x[i+1]-x[j+1]);
         Vector2d f2(sin(x[j+2]),cos(x[j+2]));
         return (y*A+f1*B)*f2+c;
+    }
+
+    vector<tuple<int,int,double>> getF(){
+        return {{i+1,j+3,A(0,0)},{j+1,j+3,-A(0,0)},{i+1,-j-3,A(0,1)},{j+1,-j-3,-A(0,1)},
+                {i+2,j+3,A(1,0)},{j+2,j+3,-A(1,0)},{i+2,-j-3,A(1,1)},{j+2,-j-3,-A(1,1)},
+                {i+3,j+3,B(0,0)},{i+3,-j-3,B(0,1)},{-i-3,j+3,B(1,0)},{-i-3,-j-3,B(1,1)},{0,0,c}};
     }
 
     vector<string> print(const double* x){
@@ -330,6 +360,15 @@ class PhiFuncClRtPtRt : public PhiFuncPrim{
         Vector2d    f2(sin(x[j+2]),cos(x[j+2]));
         Vector2d     y(x[i]-x[j],x[i+1]-x[j+1]);
         return y.dot(s*y+R1*f2)+f1*(R2*y+A*f2)+b;
+    }
+
+    vector<tuple<int,int,double>> getF(){
+        return {{i+1,i+1,s},{i+1,j+1,-2*s},{j+1,j+1,s},{i+2,i+2,s},{i+2,j+2,-2*s},{j+2,j+2,s},
+                {i+1,j+3,R1(0,0)},{j+1,j+3,-R1(0,0)},{i+1,-j-3,R1(0,1)},{j+1,-j-3,-R1(0,1)},
+                {i+2,j+3,R1(1,0)},{j+2,j+3,-R1(1,0)},{i+2,-j-3,R1(1,1)},{j+2,-j-3,-R1(1,1)},
+                { i+3,i+1,R2(0,0)},{ i+3,j+1,-R2(0,0)},{ i+3,i+2,R2(0,1)},{ i+3,j+2,-R2(0,1)},
+                {-i-3,i+1,R2(1,0)},{-i-3,i+1,-R2(1,0)},{-i-3,i+2,R2(1,1)},{-i-3,j+2,-R2(1,1)},
+                {i+3,j+3,A(0,0)},{i+3,-j-3,A(0,1)},{-i-3,j+3,A(1,0)},{-i-3,-j-3,A(1,1)},{0,0,b}};
     }
 
     vector<string> print(const double* x){

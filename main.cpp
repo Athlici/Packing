@@ -8,13 +8,33 @@
 #include <iostream>
 #include <algorithm>
 #include <eigen3/Eigen/Dense>
-//#include <coin/IpIpoptApplication.hpp>
-#include "coin/IpIpoptApplication.hpp"
 #include "tinyxml2.h"
 
-using std::vector,std::tuple,std::get,std::string;
-using Eigen::Matrix2d,Eigen::Vector2d,Eigen::RowVector2d;
-using Eigen::Matrix3d,Eigen::Vector3d,Eigen::RowVector3d;
+//#define IPOPT
+#ifdef IPOPT
+//#include <coin/IpIpoptApplication.hpp>
+#include "coin/IpIpoptApplication.hpp"
+#endif
+
+#define GUROBI
+#ifdef GUROBI
+#include <assert.h>
+#include "gurobi_c++.h"
+#endif
+
+//using std::vector,std::tuple,std::get,std::string;
+//using Eigen::Matrix2d,Eigen::Vector2d,Eigen::RowVector2d;
+//using Eigen::Matrix3d,Eigen::Vector3d,Eigen::RowVector3d;
+using std::vector;
+using std::tuple;
+using std::get;
+using std::string;
+using Eigen::Matrix2d;
+using Eigen::Vector2d;
+using Eigen::RowVector2d;
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+using Eigen::RowVector3d;
 using namespace tinyxml2;
 
 #include "Struct.cpp"           //data structures
@@ -22,16 +42,24 @@ using namespace tinyxml2;
 #include "PhiFunc.cpp"          //the distance functions
 #include "PhiObj.cpp"           //object construction
 #include "Objective.cpp"        //objective funtions
+
+#ifdef IPOPT
 #include "dNLP.cpp"             //Ipopt interface
+#endif
+#ifdef GUROBI
+#include "gQP.cpp"
+#endif
+
 #include "Helpers.cpp"          //miscellaneous helper functions
 #include "Model.cpp"            //the resulting model
 #include "XMLInterface.cpp"     //im- and export with XML
 
-double randperm=5;              //number of starting permutations
-double randorient=2;            //number of starting orientations
+const double randperm=1;              //number of starting permutations
+const double randorient=1;            //number of starting orientations
 
 int main(int argc, char** argv) {
 
+#ifdef IPOPT
     //Ipopt initialization
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
     app->Options()->SetIntegerValue("print_level", 2);          //verbosity
@@ -46,6 +74,11 @@ int main(int argc, char** argv) {
         std::cout << "Error: Couldn't initialize IPOPT!\n";
         return (int) status;
     }
+#endif
+
+#ifdef GUROBI
+    GRBEnv env = GRBEnv();
+#endif
 
     //random input initialization
     std::default_random_engine randgen(std::chrono::system_clock::now().time_since_epoch().count());
@@ -63,7 +96,12 @@ int main(int argc, char** argv) {
     //calculate bounding circles for all objects
     vector<circle> bc(n);
     for(int i=0;i<n;i++){
+#ifdef IPOPT
         bc[i] = boundCircMod(app,model->objs[i]);
+#endif
+#ifdef GUROBI
+        bc[i] = boundCircMod(env,model->objs[i]);
+#endif
         model->objs[i]->move(bc[i].p); //move bounding circle center to the origin
     }
 
@@ -113,10 +151,19 @@ int main(int argc, char** argv) {
                     x[3*j+2]*=1.03;
                 }
             }
+#ifdef IPOPT
             SmartPtr<dNLP> nlp = new dNLP(f,model->vars,phi->getIneqs(x),x);
             status = app->OptimizeTNLP(nlp);
             double fv=f->eval(n,nlp->res);
             if(status == Solve_Succeeded && fv < prior){
+#endif
+#ifdef GUROBI
+            try{
+            gQP* nlp = new gQP(env,f,model->vars,phi->getIneqs(x));
+            /*status =*/ nlp->optimize();
+            double fv=f->eval(n,nlp->res);
+            if(/*status == Solve_Succeeded &&*/ fv < prior){
+#endif
                 if(fv < f->eval(n,bestsol.data()) && phi->eval(nlp->res) > -0.001){
                     for(int j=0;j<3*n+1;j++)
                         bestsol[j] = nlp->res[j];
@@ -130,6 +177,10 @@ int main(int argc, char** argv) {
                     notstalled = false;
             } else 
                 notstalled = false;
+            } catch(GRBException e) {
+              std::cout << "Error code = " << e.getErrorCode() << std::endl;
+              std::cout << e.getMessage() << std::endl;
+            }
         }while(notstalled);
     }
 
@@ -139,4 +190,5 @@ int main(int argc, char** argv) {
 
     //write solution into XML file
     xml.write(bestsol,bc);
+
 }

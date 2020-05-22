@@ -1,4 +1,10 @@
+#ifdef IPOPT
 using namespace Ipopt;
+#endif
+#ifdef GUROBI
+typedef double Number;
+typedef int Index;
+#endif
 
 //interface for objective functions
 class Objective{
@@ -6,13 +12,13 @@ class Objective{
     virtual Number eval(Index n, const Number* x) = 0;
     virtual void grad(Index n, const Number* x,  Number* grad) = 0;
     //TODO add hessian
+    virtual vector<tuple<int,int,double>> getF() = 0;
   };
 
 //optimize the value of the first variable, for example for scaling
 class FirstVar: public Objective{
-   public:
+  public:
     FirstVar(){};
-
     Number eval(Index n, const Number* x){
       return x[0];
     }
@@ -22,4 +28,8 @@ class FirstVar: public Objective{
       for(int i=1;i<n;i++)
         grad[i] = 0;
     }
+    vector<tuple<int,int,double>> getF(){
+      return {{0,1,1}};
+    }
+
 };

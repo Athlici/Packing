@@ -69,7 +69,12 @@ class XMLInterface{
                     model->rt.push_back(RotTrans(model->vars.size()));
                     model->vars.push_back(var(-2e19,2e19));
                     model->vars.push_back(var(-2e19,2e19));
+#ifdef IPOPT
                     model->vars.push_back(var(-2*M_PI,2*M_PI));
+#endif
+#ifdef GUROBI
+                    model->vars.push_back(var(-2e19,2e19,true));
+#endif
                     model->objs.push_back(parseObj(obj));
                 }
             }

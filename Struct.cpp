@@ -1,8 +1,10 @@
 struct var{  //variables
     var() {};
     var(double lbi,double ubi) : lb(lbi),ub(ubi) {};
+    var(double lbi,double ubi,bool radiani) : lb(lbi),ub(ubi),radian(radiani) {};
     double lb,ub;
-    string name;
+    bool radian=false;
+//    string name;
 };
 
 class point{  //points TODO: make Vector2d?

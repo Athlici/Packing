@@ -4,7 +4,7 @@ point toPoint(XMLElement* p){
     p->QueryDoubleAttribute("x",&x);
     p->QueryDoubleAttribute("y",&y);
     return point(x,y);
-}
+};
 
 //convert a circle in XML into an object
 circle toCircle(XMLElement* c,double s=1){
@@ -24,10 +24,11 @@ tuple<point,point> moveLine(point p0,point p1,double r){
                               point(p1.x-dy*c,p1.y+dx*c));
 }
 
+#ifdef IPOPT
 //find the bounding circle of an object with Ipopt
 circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     Objective* obj = new FirstVar();
-    vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19),var(0,0)};
+    vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19),var(0,0,true)};
 
     Scale f = Scale(0);
     RotTrans g = RotTrans(1);
@@ -48,6 +49,39 @@ circle boundCircMod(SmartPtr<IpoptApplication> app, PhiCompObj* A){
     
     return circle(point(x[1],x[2]),x[0]);
 }
+#endif
+
+#ifdef GUROBI
+//find the bounding circle of an object with GUROBI
+circle boundCircMod(GRBEnv env, PhiCompObj* A){
+    Objective* obj = new FirstVar();
+    vector<var> vars = {var(0,2e19),var(-2e19,2e19),var(-2e19,2e19),var(0,0,true)};
+
+    Scale f = Scale(0);
+    RotTrans g = RotTrans(1);
+    PhiInfObj* C = new PhiCircCompl(circle(point(0,0),1));
+    PhiFunc* phi = phiFunc(C,f,A,g);
+
+    double x[] = {1,0,0,0};
+    while(phi->eval(x)<0)
+        x[0]*=2;
+
+    bool newseg;
+//    do{
+        try{
+          gQP* nlp = new gQP(env,obj,vars,phi->getIneqs(x));
+          nlp->optimize();
+          newseg = (nlp->res[0] < x[0]) && (phi->getIneqs(x) != phi->getIneqs(nlp->res));
+          for(int i=0;i<3;i++) x[i] = nlp->res[i];
+        } catch(GRBException e) {
+          std::cout << "Error code = " << e.getErrorCode() << std::endl;
+          std::cout << e.getMessage() << std::endl;
+        }
+//    }while(newseg);
+    
+    return circle(point(x[1],x[2]),x[0]);
+}
+#endif
 
 //pack circles by iteratively placing them in the first free position of a path
 vector<point> circlePack(vector<double> cr){
