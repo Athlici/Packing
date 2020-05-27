@@ -38,7 +38,7 @@ class gQP{
     gQP(GRBEnv env,Objective* fi,vector<var> varsi,vector<PhiFuncPrim*> phix/*,const double* x0i*/) : model(GRBModel(env)){
 //      model = GRBModel(env);
       model.set(GRB_IntParam_NonConvex, 2); 
-      model.set(GRB_DoubleParam_TimeLimit, 60);
+//      model.set(GRB_DoubleParam_TimeLimit, 60);
       
       n = varsi.size();
       vars.resize(n);vcos.resize(n);dual = new bool[n];

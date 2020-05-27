@@ -10,13 +10,14 @@
 #include <eigen3/Eigen/Dense>
 #include "tinyxml2.h"
 
-//#define IPOPT
+#define IPOPT
+//#define GUROBI
+
 #ifdef IPOPT
 //#include <coin/IpIpoptApplication.hpp>
 #include "coin/IpIpoptApplication.hpp"
 #endif
 
-#define GUROBI
 #ifdef GUROBI
 #include <assert.h>
 #include "gurobi_c++.h"
@@ -54,19 +55,19 @@ using namespace tinyxml2;
 #include "Model.cpp"            //the resulting model
 #include "XMLInterface.cpp"     //im- and export with XML
 
-const double randperm=1;              //number of starting permutations
-const double randorient=1;            //number of starting orientations
+const double randperm=100;              //number of starting permutations
+const double randorient=10;            //number of starting orientations
 
 int main(int argc, char** argv) {
 
 #ifdef IPOPT
     //Ipopt initialization
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-    app->Options()->SetIntegerValue("print_level", 2);          //verbosity
+    app->Options()->SetIntegerValue("print_level", 0);          //verbosity
     app->Options()->SetIntegerValue("max_iter", 500);           //maximum iteration number
     app->Options()->SetNumericValue("tol", 1e-6);               //tolerance
-    app->Options()->SetStringValue("linear_solver", "ma57");
-//    app->Options()->SetStringValue("linear_solver", "mumps");
+//    app->Options()->SetStringValue("linear_solver", "ma57");
+    app->Options()->SetStringValue("linear_solver", "mumps");
     app->Options()->SetStringValue("accept_every_trial_step", "yes"); //semi-succesfull workaround for unresolved bug
 //    app->Options()->SetStringValue("derivative_test", "second-order");
     ApplicationReturnStatus status = app->Initialize();
@@ -165,9 +166,12 @@ int main(int argc, char** argv) {
             if(/*status == Solve_Succeeded &&*/ fv < prior){
 #endif
                 if(fv < f->eval(n,bestsol.data()) && phi->eval(nlp->res) > -0.001){
-                    for(int j=0;j<3*n+1;j++)
+                    std::cout << fv << ":";
+                    for(int j=0;j<3*n+1;j++){
                         bestsol[j] = nlp->res[j];
-                    std::cout << fv << "\n";
+                        std::cout << bestsol[j] << ",";
+                    }
+                    std::cout << std::endl;
                 }
                 if(phi->getIneqs(x) != phi->getIneqs(nlp->res)){
                     notstalled = true;
@@ -177,10 +181,12 @@ int main(int argc, char** argv) {
                     notstalled = false;
             } else 
                 notstalled = false;
+#ifdef GUROBI
             } catch(GRBException e) {
               std::cout << "Error code = " << e.getErrorCode() << std::endl;
               std::cout << e.getMessage() << std::endl;
             }
+#endif
         }while(notstalled);
     }
 
