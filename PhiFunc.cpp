@@ -24,6 +24,8 @@ class PhiFunc{
 
 class PhiFuncPrim: public PhiFunc{
   public:
+//0->no var, i/-i->(i-1)th var (cos)
+//constant -> (0,0), linear -> (0,i), quadratic -> (i,j)
     virtual vector<tuple<int,int,double>> getF() = 0;
     virtual void getD1(const double* x,double* res) = 0;
     virtual vector<int> getD1ind() = 0;
@@ -125,12 +127,6 @@ class PhiFuncLnScClRt : public PhiFuncPrim{
         return trs.dot(f)+rot.dot(g)+o;
     }
 
-//-i->(i-1)th var cos
-//0->no var
-//i->(i-1)th var (pot sin)
-//constant (0,0)
-//linear (0,i)
-//quadratic (i,j)
     vector<tuple<int,int,double>> getF(){
         return {{0,i+1,trs[0]},{0,j+1,trs[1]},{0,j+2,trs[2]},{0,j+3,rot[0]},{0,-j-3,rot[1]},{0,0,o}};
     }

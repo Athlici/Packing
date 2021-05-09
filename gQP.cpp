@@ -12,7 +12,6 @@ class gQP{
     GRBQuadExpr parseExpr(vector<tuple<int,int,double>> f){
       GRBQuadExpr expr = GRBQuadExpr();
       expr.clear();
-//      for(auto [i,j,d] : f)
       for(int l=0;l<f.size();l++){
         int i = get<0>(f[l]),j = get<1>(f[l]);
         double d = get<2>(f[l]);
@@ -35,7 +34,7 @@ class gQP{
   public:
     double* res;
 
-    gQP(GRBEnv env,Objective* fi,vector<var> varsi,vector<PhiFuncPrim*> phix/*,const double* x0i*/) : model(GRBModel(env)){
+    gQP(GRBEnv env,Objective* fi,vector<var> varsi,vector<PhiFuncPrim*> phix) : model(GRBModel(env)){
 //      model = GRBModel(env);
       model.set(GRB_IntParam_NonConvex, 2); 
 //      model.set(GRB_DoubleParam_TimeLimit, 60);
@@ -47,8 +46,8 @@ class gQP{
         dual[i] = v.radian;
         if(v.radian){
           if(v.lb!=v.ub){
-            vars[i] = model.addVar(-1,1,0,GRB_CONTINUOUS);
-            vcos[i] = model.addVar(-1,1,0,GRB_CONTINUOUS);
+            vars[i] = model.addVar(-2,2,0,GRB_CONTINUOUS);
+            vcos[i] = model.addVar(-2,2,0,GRB_CONTINUOUS);
             model.addQConstr(vars[i]*vars[i]+vcos[i]*vcos[i],GRB_GREATER_EQUAL,1); //overestimate
           }else{
             vars[i] = model.addVar(sin(v.lb),sin(v.lb),0,GRB_CONTINUOUS);
@@ -63,6 +62,30 @@ class gQP{
 
       for(int i=0;i<phix.size();i++)
         model.addQConstr(parseExpr(phix[i]->getF()),GRB_GREATER_EQUAL,0);
+
+#ifdef GLOPTIPOLY
+  std::cout << "mpol x " << n+n/3 << std::endl;
+  std::cout << "f = x(1);" << std::endl;
+  std::cout << "K = ["; std::cout.precision(10);
+  for(int i=0;i<phix.size();i++){
+    vector<tuple<int,int,double>> phi = phix[i]->getF();
+    for(int j=0;j<phi.size();j++){
+      int k=get<0>(phi[j]),l=get<1>(phi[j]);
+      if(k!=0)
+        std::cout << "(" << get<2>(phi[j]) << ")*x(" << (k>0 ? k+(k-2)/3 : 1-k-(k+2)/3) << ")*x(" 
+                  << (l>0 ? l+(l-2)/3 : 1-l-(l+2)/3) << ")+";
+      else if(l!=0)
+        std::cout << "(" << get<2>(phi[j]) << ")*x(" << (l>0 ? l+(l-2)/3 : 1-l-(l+2)/3) << ")+";
+      else
+        std::cout << "(" << get<2>(phi[j]) << ")+";
+    }
+    std::cout << "\b>=0,";
+  }
+  for(int i=1;3*i<n;i++)
+    std::cout << "x(" << 4*i << ")*x(" << 4*i << ")+x(" << 4*i+1 << ")*x(" << 4*i+1 << ")>=1,";
+  std::cout << "\b];" << std::endl;
+  std::cout << "P = msdp(min(f),K)" << std::endl;
+#endif
     }
 
     void optimize(){
