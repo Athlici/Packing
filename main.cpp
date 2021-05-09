@@ -14,7 +14,6 @@
 //#define GUROBI
 
 #ifdef IPOPT
-//#include <coin/IpIpoptApplication.hpp>
 #include "coin/IpIpoptApplication.hpp"
 #endif
 
@@ -62,17 +61,20 @@ int main(int argc, char** argv) {
 
 #ifdef IPOPT
     //Ipopt initialization
+    std::cout << "Initializing IPOPT: ";
     SmartPtr<IpoptApplication> app = IpoptApplicationFactory();
-    app->Options()->SetIntegerValue("print_level", 0);          //verbosity
+    app->Options()->SetIntegerValue("print_level", 2);          //verbosity
     app->Options()->SetIntegerValue("max_iter", 500);           //maximum iteration number
     app->Options()->SetNumericValue("tol", 1e-6);               //tolerance
 //    app->Options()->SetStringValue("linear_solver", "ma57");
     app->Options()->SetStringValue("linear_solver", "mumps");
-    app->Options()->SetStringValue("accept_every_trial_step", "yes"); //semi-succesfull workaround for unresolved bug
+//    app->Options()->SetStringValue("accept_every_trial_step", "yes"); //semi-succesfull workaround for unresolved bug
 //    app->Options()->SetStringValue("derivative_test", "second-order");
     ApplicationReturnStatus status = app->Initialize();
-    if (status != Solve_Succeeded) {
-        std::cout << "Error: Couldn't initialize IPOPT!\n";
+    if(status == Solve_Succeeded){
+        std::cout << "Success \n";
+    }else{
+        std::cout << "Error! Code " << status << "\n";
         return (int) status;
     }
 #endif
@@ -97,12 +99,7 @@ int main(int argc, char** argv) {
     //calculate bounding circles for all objects
     vector<circle> bc(n);
     for(int i=0;i<n;i++){
-#ifdef IPOPT
         bc[i] = boundCircMod(app,model->objs[i]);
-#endif
-#ifdef GUROBI
-        bc[i] = boundCircMod(env,model->objs[i]);
-#endif
         model->objs[i]->move(bc[i].p); //move bounding circle center to the origin
     }
 
@@ -163,7 +160,7 @@ int main(int argc, char** argv) {
             gQP* nlp = new gQP(env,f,model->vars,phi->getIneqs(x));
             /*status =*/ nlp->optimize();
             double fv=f->eval(n,nlp->res);
-            if(/*status == Solve_Succeeded &&*/ fv < prior){
+            if(fv < prior){
 #endif
                 if(fv < f->eval(n,bestsol.data()) && phi->eval(nlp->res) > -0.001){
                     std::cout << fv << ":";
