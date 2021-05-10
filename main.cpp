@@ -105,6 +105,9 @@ int main(int argc, char** argv) {
 
     //create distance functions for all objects
     PhiFunc* phi = model->createPhiFunc();
+//    const double testvar[7] = {0,-1.38,1,-2.73,-2.9,-1,0.12};
+//    vector<string> out = phi->print(testvar);
+//    for(int i=0;i<out.size();i++) std::cout << out[i] << "\n";
 
     //circle packing from random object permutation
     vector<vector<double>> initials(randperm*randorient);

@@ -1,0 +1,3 @@
+solutions get counted wrongly leading to segfaults
+offset of circle complements is not handled correctly
+single element leads to segfaults
