@@ -36,7 +36,7 @@ class PhiCircCompl: public PhiInfObj{
 class PhiLineCompl: public PhiInfObj{
     public:
         point p0,p1;
-        PhiLineCompl(point p0i, point p1i) : p0(p0i),p1(p0i) {}
+        PhiLineCompl(point p0i, point p1i) : p0(p0i),p1(p1i) {}
 
         PhiFunc* phiFunc(Scale f, PhiCompObj* B, RotTrans g){
             return B->phiFunc(g, this, f);

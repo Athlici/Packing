@@ -132,7 +132,7 @@ class PhiFuncLnScClRt : public PhiFuncPrim{
     }
 
     vector<string> print(const double* x){
-        return {"CcScClRt : " + std::to_string(eval(x))};
+        return {"LnScClRt : " + std::to_string(eval(x))};
     }
 
     void getD1(const double* x,double* res){
